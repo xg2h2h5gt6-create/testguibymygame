@@ -1,0 +1,139 @@
+local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/Fluent.lua"))()
+local SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/SaveManager.lua"))()
+local InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/InterfaceManager.lua"))()
+
+-- // Özel Tema //
+local CustomTheme = {
+    Accent = Color3.fromRGB(220, 220, 230),         -- Soft neon beyaz
+    Accent2 = Color3.fromRGB(200, 200, 210),
+    Background = Color3.fromRGB(20, 20, 22),         -- Koyu siyah
+    Background2 = Color3.fromRGB(30, 30, 34),
+    Title = Color3.fromRGB(18, 18, 20),
+    Text = Color3.fromRGB(230, 230, 240),
+    Text2 = Color3.fromRGB(140, 140, 150),
+    ToggleOn = Color3.fromRGB(220, 220, 230),
+    ToggleOff = Color3.fromRGB(50, 50, 55),
+    WindowSize = Vector2.new(420, 350)
+}
+
+-- // Ana Pencere //
+local Window = Fluent:CreateWindow({
+    Title = "ZwacHub",
+    SubTitle = "",
+    TabWidth = 140,
+    Size = UDim2.fromOffset(CustomTheme.WindowSize.X, CustomTheme.WindowSize.Y),
+    Acrylic = true,
+    Theme = "Dark",
+    MinimizeKey = Enum.KeyCode.RightControl
+})
+
+-- Tema renklerini uygula
+Window:SetAccent(CustomTheme.Accent)
+Window:SetBackground(CustomTheme.Background)
+
+-- // Sekmeler //
+local Tabs = {
+    Dungeon = Window:AddTab({ Title = "Dungeon", Icon = "door-open" }),
+    Settings = Window:AddTab({ Title = "Settings", Icon = "settings" }),
+    Credit = Window:AddTab({ Title = "Credits", Icon = "info" })
+}
+
+-- // DUNGEON SEKME //
+local autoReplay = false
+
+Tabs.Dungeon:AddSection("Dungeon Otomasyonu")
+
+Tabs.Dungeon:AddToggle("AutoReplay", {
+    Title = "Auto Replay",
+    Description = "Her 10 saniyede bir Replay eventini atar",
+    Default = false
+}):OnChanged(function(value)
+    autoReplay = value
+    if value then
+        task.spawn(function()
+            while autoReplay do
+                pcall(function()
+                    local args = { [1] = "sponsor" }
+                    game:GetService("ReplicatedStorage").Remotes.DungeonWaveReplayVote:FireServer(unpack(args))
+                end)
+                task.wait(10)
+            end
+        end)
+    end
+end)
+
+Tabs.Dungeon:AddSection("Yakinda...")
+Tabs.Dungeon:AddLabel("Soon", { Title = "" }):SetText("Daha fazla özellik eklenecek...")
+
+-- // SETTINGS SEKME //
+local Players = game:GetService("Players")
+local VirtualUser = game:GetService("VirtualUser")
+local player = Players.LocalPlayer
+local antiAFK = false
+
+Tabs.Settings:AddSection("Genel Ayarlar")
+
+Tabs.Settings:AddToggle("AntiAFK", {
+    Title = "Anti AFK",
+    Description = "Karakteri kıpırdatmadan AFK olmayı engeller",
+    Default = false
+}):OnChanged(function(value)
+    antiAFK = value
+end)
+
+task.spawn(function()
+    while task.wait(10) do
+        if antiAFK then
+            pcall(function()
+                VirtualUser:CaptureController()
+                VirtualUser:ClickButton2(Vector2.new())
+            end)
+        end
+    end
+end)
+
+Tabs.Settings:AddSection("Performans")
+
+Tabs.Settings:AddToggle("FPSBoost", {
+    Title = "FPS Boost",
+    Description = "Gereksiz görselleri temizler, gölgeleri kapatır",
+    Default = false
+}):OnChanged(function(value)
+    if value then
+        for _, v in pairs(game:GetService("Workspace"):GetDescendants()) do
+            if v:IsA("Texture") or v:IsA("Decal") then
+                v:Destroy()
+            end
+        end
+        local lighting = game:GetService("Lighting")
+        lighting.GlobalShadows = false
+        lighting.FogEnd = 9e9
+        pcall(function()
+            settings().Rendering.QualityLevel = 1
+        end)
+    end
+end)
+
+-- // CREDITS SEKME //
+Tabs.Credit:AddSection("ZwacHub")
+Tabs.Credit:AddLabel("Info", { Title = "" }):SetText("v1.0 | Sadece işini kolaylaştırmak için")
+Tabs.Credit:AddLabel("Dev", { Title = "" }):SetText("Developer: Zwac")
+
+-- // Save & UI //
+SaveManager:SetLibrary(Fluent)
+InterfaceManager:SetLibrary(Fluent)
+SaveManager:IgnoreThemeSettings()
+SaveManager:SetFolder("ZwacHub/SailorPiece")
+InterfaceManager:SetFolder("ZwacHub/SailorPiece")
+
+SaveManager:BuildConfigSection(Tabs.Dungeon)
+SaveManager:BuildConfigSection(Tabs.Settings)
+InterfaceManager:BuildInterfaceSection(Tabs.Dungeon)
+InterfaceManager:BuildInterfaceSection(Tabs.Settings)
+
+-- // Bildirim //
+Fluent:Notify({
+    Title = "ZwacHub",
+    Content = "Başarıyla yüklendi!",
+    Duration = 4
+})
