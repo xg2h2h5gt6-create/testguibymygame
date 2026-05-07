@@ -1,57 +1,440 @@
-local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/Fluent.lua"))()
-local SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/SaveManager.lua"))()
-local InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/InterfaceManager.lua"))()
+-- // ZwacHub - %100 Organik GUI //
+-- // Sailor Piece için özel yapıldı //
 
--- // Özel Tema //
-local CustomTheme = {
-    Accent = Color3.fromRGB(220, 220, 230),         -- Soft neon beyaz
-    Accent2 = Color3.fromRGB(200, 200, 210),
-    Background = Color3.fromRGB(20, 20, 22),         -- Koyu siyah
-    Background2 = Color3.fromRGB(30, 30, 34),
-    Title = Color3.fromRGB(18, 18, 20),
-    Text = Color3.fromRGB(230, 230, 240),
-    Text2 = Color3.fromRGB(140, 140, 150),
+local Players = game:GetService("Players")
+local Player = Players.LocalPlayer
+local Mouse = Player:GetMouse()
+local VirtualUser = game:GetService("VirtualUser")
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+
+-- // Ana GUI Elementleri //
+local ScreenGui = Instance.new("ScreenGui")
+local MainFrame = Instance.new("Frame")
+local TopBar = Instance.new("Frame")
+local Title = Instance.new("TextLabel")
+local CloseButton = Instance.new("TextButton")
+local TabFrame = Instance.new("Frame")
+local ContentFrame = Instance.new("Frame")
+
+-- // Toggle Buton (Sürüklenebilir) //
+local ToggleButton = Instance.new("TextButton")
+
+-- // GUI Ayarları //
+ScreenGui.Name = "ZwacHub"
+ScreenGui.Parent = game:GetService("CoreGui")
+
+-- Koruma
+if syn and syn.protect_gui then
+    syn.protect_gui(ScreenGui)
+end
+
+-- // Stil Sabitleri //
+local COLORS = {
+    Background = Color3.fromRGB(15, 15, 17),
+    Frame = Color3.fromRGB(25, 25, 28),
+    Accent = Color3.fromRGB(220, 220, 230),
+    AccentDim = Color3.fromRGB(180, 180, 190),
+    Text = Color3.fromRGB(240, 240, 250),
+    TextDim = Color3.fromRGB(150, 150, 160),
     ToggleOn = Color3.fromRGB(220, 220, 230),
-    ToggleOff = Color3.fromRGB(50, 50, 55),
-    WindowSize = Vector2.new(420, 350)
+    ToggleOff = Color3.fromRGB(45, 45, 50),
+    TabSelected = Color3.fromRGB(35, 35, 40),
+    TabNormal = Color3.fromRGB(25, 25, 28)
 }
 
--- // Ana Pencere //
-local Window = Fluent:CreateWindow({
-    Title = "ZwacHub",
-    SubTitle = "",
-    TabWidth = 140,
-    Size = UDim2.fromOffset(CustomTheme.WindowSize.X, CustomTheme.WindowSize.Y),
-    Acrylic = true,
-    Theme = "Dark",
-    MinimizeKey = Enum.KeyCode.RightControl
-})
+-- // Yardımcı Fonksiyonlar //
+local function createTween(instance, properties, duration)
+    local tweenInfo = TweenInfo.new(duration or 0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+    local tween = TweenService:Create(instance, tweenInfo, properties)
+    tween:Play()
+    return tween
+end
 
--- Tema renklerini uygula
-Window:SetAccent(CustomTheme.Accent)
-Window:SetBackground(CustomTheme.Background)
+local function round(num, decimal)
+    local mult = 10 ^ (decimal or 0)
+    return math.floor(num * mult + 0.5) / mult
+end
 
--- // Sekmeler //
-local Tabs = {
-    Dungeon = Window:AddTab({ Title = "Dungeon", Icon = "door-open" }),
-    Settings = Window:AddTab({ Title = "Settings", Icon = "settings" }),
-    Credit = Window:AddTab({ Title = "Credits", Icon = "info" })
-}
+-- // Sürüklenebilir Yapma Fonksiyonu //
+local function makeDraggable(frame, dragElement)
+    local dragging = false
+    local dragStart = nil
+    local startPos = nil
+    
+    dragElement = dragElement or frame
+    
+    dragElement.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            dragStart = input.Position
+            startPos = frame.Position
+        end
+    end)
+    
+    dragElement.InputChanged:Connect(function(input)
+        if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+            local delta = input.Position - dragStart
+            frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        end
+    end)
+    
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = false
+        end
+    end)
+end
 
--- // DUNGEON SEKME //
-local autoReplay = false
+-- // Toggle Buton (Küçük Kare) //
+ToggleButton.Name = "ToggleButton"
+ToggleButton.Size = UDim2.new(0, 40, 0, 40)
+ToggleButton.Position = UDim2.new(0.5, 0, 0.5, 0)
+ToggleButton.BackgroundColor3 = Color3.fromRGB(25, 25, 28)
+ToggleButton.BackgroundTransparency = 0.3
+ToggleButton.BorderSizePixel = 0
+ToggleButton.Text = "⏣"
+ToggleButton.TextColor3 = COLORS.Accent
+ToggleButton.TextSize = 20
+ToggleButton.Font = Enum.Font.GothamBold
+ToggleButton.Parent = ScreenGui
 
-Tabs.Dungeon:AddSection("Dungeon Otomasyonu")
+-- Toggle Butona Yuvarlak Köşe
+local toggleCorner = Instance.new("UICorner")
+toggleCorner.CornerRadius = UDim.new(0, 6)
+toggleCorner.Parent = ToggleButton
 
-Tabs.Dungeon:AddToggle("AutoReplay", {
-    Title = "Auto Replay",
-    Description = "Her 10 saniyede bir Replay eventini atar",
-    Default = false
-}):OnChanged(function(value)
-    autoReplay = value
+makeDraggable(ToggleButton)
+
+-- // Ana Frame //
+MainFrame.Name = "MainFrame"
+MainFrame.Size = UDim2.new(0, 380, 0, 460)
+MainFrame.Position = UDim2.new(0.5, -190, 0.5, -230)
+MainFrame.BackgroundColor3 = COLORS.Background
+MainFrame.BackgroundTransparency = 0.15
+MainFrame.BorderSizePixel = 0
+MainFrame.Visible = false
+MainFrame.ClipsDescendants = true
+MainFrame.Parent = ScreenGui
+
+local mainCorner = Instance.new("UICorner")
+mainCorner.CornerRadius = UDim.new(0, 12)
+mainCorner.Parent = MainFrame
+
+-- İnce Border Efekti
+local border = Instance.new("UIStroke")
+border.Thickness = 1
+border.Color = Color3.fromRGB(50, 50, 55)
+border.Transparency = 0.5
+border.Parent = MainFrame
+
+-- // Üst Bar //
+TopBar.Name = "TopBar"
+TopBar.Size = UDim2.new(1, 0, 0, 45)
+TopBar.BackgroundColor3 = COLORS.Frame
+TopBar.BackgroundTransparency = 0.3
+TopBar.BorderSizePixel = 0
+TopBar.Parent = MainFrame
+
+local topCorner = Instance.new("UICorner")
+topCorner.CornerRadius = UDim.new(0, 12)
+topCorner.Parent = TopBar
+
+Title.Name = "Title"
+Title.Size = UDim2.new(0, 150, 1, 0)
+Title.Position = UDim2.new(0, 15, 0, 0)
+Title.BackgroundTransparency = 1
+Title.Text = "ZwacHub"
+Title.TextColor3 = COLORS.Accent
+Title.TextSize = 18
+Title.Font = Enum.Font.GothamBold
+Title.TextXAlignment = Enum.TextXAlignment.Left
+Title.Parent = TopBar
+
+-- // Kapatma Butonu //
+CloseButton.Name = "CloseButton"
+CloseButton.Size = UDim2.new(0, 30, 0, 30)
+CloseButton.Position = UDim2.new(1, -40, 0, 8)
+CloseButton.BackgroundColor3 = Color3.fromRGB(35, 35, 40)
+CloseButton.BackgroundTransparency = 0.5
+CloseButton.BorderSizePixel = 0
+CloseButton.Text = "✕"
+CloseButton.TextColor3 = COLORS.Text
+CloseButton.TextSize = 14
+CloseButton.Font = Enum.Font.GothamBold
+CloseButton.Parent = TopBar
+
+local closeCorner = Instance.new("UICorner")
+closeCorner.CornerRadius = UDim.new(0, 6)
+closeCorner.Parent = CloseButton
+
+-- // Tab Frame //
+TabFrame.Name = "TabFrame"
+TabFrame.Size = UDim2.new(1, 0, 0, 35)
+TabFrame.Position = UDim2.new(0, 0, 0, 50)
+TabFrame.BackgroundColor3 = COLORS.Frame
+TabFrame.BackgroundTransparency = 0.5
+TabFrame.BorderSizePixel = 0
+TabFrame.Parent = MainFrame
+
+-- // Content Frame //
+ContentFrame.Name = "ContentFrame"
+ContentFrame.Size = UDim2.new(1, -20, 1, -100)
+ContentFrame.Position = UDim2.new(0, 10, 0, 95)
+ContentFrame.BackgroundTransparency = 1
+ContentFrame.Parent = MainFrame
+
+makeDraggable(MainFrame, TopBar)
+
+-- // Tab Sistemi //
+local tabs = {}
+local currentTab = nil
+
+local function createTab(name, icon)
+    local tabButton = Instance.new("TextButton")
+    tabButton.Name = name
+    tabButton.Size = UDim2.new(0, 120, 1, 0)
+    tabButton.BackgroundColor3 = COLORS.TabNormal
+    tabButton.BorderSizePixel = 0
+    tabButton.Text = (icon or "") .. "  " .. name
+    tabButton.TextColor3 = COLORS.TextDim
+    tabButton.TextSize = 13
+    tabButton.Font = Enum.Font.GothamSemibold
+    tabButton.Parent = TabFrame
+    
+    local tabCorner = Instance.new("UICorner")
+    tabCorner.CornerRadius = UDim.new(0, 4)
+    tabCorner.Parent = tabButton
+    
+    -- İçerik Frame'i
+    local tabContent = Instance.new("Frame")
+    tabContent.Name = name .. "Content"
+    tabContent.Size = UDim2.new(1, 0, 1, 0)
+    tabContent.BackgroundTransparency = 1
+    tabContent.Visible = false
+    tabContent.Parent = ContentFrame
+    
+    -- Scrolling Frame
+    local scrollFrame = Instance.new("ScrollingFrame")
+    scrollFrame.Name = "Scroll"
+    scrollFrame.Size = UDim2.new(1, 0, 1, 0)
+    scrollFrame.BackgroundTransparency = 1
+    scrollFrame.BorderSizePixel = 0
+    scrollFrame.ScrollBarThickness = 3
+    scrollFrame.ScrollBarImageColor3 = COLORS.AccentDim
+    scrollFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
+    scrollFrame.Parent = tabContent
+    
+    local uiListLayout = Instance.new("UIListLayout")
+    uiListLayout.Padding = UDim.new(0, 8)
+    uiListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    uiListLayout.Parent = scrollFrame
+    
+    local tabData = {
+        button = tabButton,
+        content = tabContent,
+        scroll = scrollFrame,
+        list = uiListLayout
+    }
+    
+    local function selectTab()
+        if currentTab == tabData then return end
+        if currentTab then
+            currentTab.content.Visible = false
+            createTween(currentTab.button, {BackgroundColor3 = COLORS.TabNormal, TextColor3 = COLORS.TextDim}, 0.15)
+        end
+        tabContent.Visible = true
+        createTween(tabButton, {BackgroundColor3 = COLORS.TabSelected, TextColor3 = COLORS.Accent}, 0.15)
+        currentTab = tabData
+    end
+    
+    tabButton.MouseButton1Click:Connect(selectTab)
+    tabs[#tabs + 1] = tabData
+    
+    return tabData
+end
+
+-- // Element Oluşturucular //
+local function addLabel(tab, text)
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, -10, 0, 20)
+    label.BackgroundTransparency = 1
+    label.Text = text
+    label.TextColor3 = COLORS.TextDim
+    label.TextSize = 12
+    label.Font = Enum.Font.Gotham
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Parent = tab.scroll
+    return label
+end
+
+local function addSection(tab, title)
+    local section = Instance.new("Frame")
+    section.Size = UDim2.new(1, -10, 0, 30)
+    section.BackgroundTransparency = 1
+    section.Parent = tab.scroll
+    
+    local sectionText = Instance.new("TextLabel")
+    sectionText.Size = UDim2.new(1, 0, 1, 0)
+    sectionText.BackgroundTransparency = 1
+    sectionText.Text = title
+    sectionText.TextColor3 = COLORS.Accent
+    sectionText.TextSize = 14
+    sectionText.Font = Enum.Font.GothamBold
+    sectionText.TextXAlignment = Enum.TextXAlignment.Left
+    sectionText.Parent = section
+    
+    local line = Instance.new("Frame")
+    line.Size = UDim2.new(1, 0, 0, 1)
+    line.Position = UDim2.new(0, 0, 1, 0)
+    line.BackgroundColor3 = COLORS.Accent
+    line.BackgroundTransparency = 0.7
+    line.BorderSizePixel = 0
+    line.Parent = section
+    
+    return section
+end
+
+local function addToggle(tab, title, description, default)
+    local toggleFrame = Instance.new("Frame")
+    toggleFrame.Size = UDim2.new(1, -10, 0, 35)
+    toggleFrame.BackgroundColor3 = COLORS.Frame
+    toggleFrame.BackgroundTransparency = 0.3
+    toggleFrame.BorderSizePixel = 0
+    toggleFrame.Parent = tab.scroll
+    
+    local toggleCorner = Instance.new("UICorner")
+    toggleCorner.CornerRadius = UDim.new(0, 8)
+    toggleCorner.Parent = toggleFrame
+    
+    local infoFrame = Instance.new("Frame")
+    infoFrame.Size = UDim2.new(1, -60, 1, 0)
+    infoFrame.BackgroundTransparency = 1
+    infoFrame.Parent = toggleFrame
+    
+    local titleLabel = Instance.new("TextLabel")
+    titleLabel.Size = UDim2.new(1, -5, 0, 18)
+    titleLabel.Position = UDim2.new(0, 10, 0, 3)
+    titleLabel.BackgroundTransparency = 1
+    titleLabel.Text = title
+    titleLabel.TextColor3 = COLORS.Text
+    titleLabel.TextSize = 13
+    titleLabel.Font = Enum.Font.GothamSemibold
+    titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+    titleLabel.Parent = infoFrame
+    
+    local descLabel = Instance.new("TextLabel")
+    descLabel.Size = UDim2.new(1, -5, 0, 12)
+    descLabel.Position = UDim2.new(0, 10, 0, 20)
+    descLabel.BackgroundTransparency = 1
+    descLabel.Text = description
+    descLabel.TextColor3 = COLORS.TextDim
+    descLabel.TextSize = 10
+    descLabel.Font = Enum.Font.Gotham
+    descLabel.TextXAlignment = Enum.TextXAlignment.Left
+    descLabel.Parent = infoFrame
+    
+    -- Toggle Switch
+    local switch = Instance.new("TextButton")
+    switch.Size = UDim2.new(0, 44, 0, 24)
+    switch.Position = UDim2.new(1, -52, 0.5, -12)
+    switch.BackgroundColor3 = default and COLORS.ToggleOn or COLORS.ToggleOff
+    switch.BorderSizePixel = 0
+    switch.Text = ""
+    switch.AutoButtonColor = false
+    switch.Parent = toggleFrame
+    
+    local switchCorner = Instance.new("UICorner")
+    switchCorner.CornerRadius = UDim.new(1, 0)
+    switchCorner.Parent = switch
+    
+    local knob = Instance.new("Frame")
+    knob.Size = UDim2.new(0, 18, 0, 18)
+    knob.Position = default and UDim2.new(1, -21, 0.5, -9) or UDim2.new(0, 3, 0.5, -9)
+    knob.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    knob.BorderSizePixel = 0
+    knob.BackgroundTransparency = 0.1
+    knob.Parent = switch
+    
+    local knobCorner = Instance.new("UICorner")
+    knobCorner.CornerRadius = UDim.new(1, 0)
+    knobCorner.Parent = knob
+    
+    local toggled = default or false
+    local callbacks = {}
+    
+    local function fireCallbacks(val)
+        toggled = val
+        for _, cb in ipairs(callbacks) do
+            task.spawn(function() cb(val) end)
+        end
+    end
+    
+    switch.MouseButton1Click:Connect(function()
+        toggled = not toggled
+        if toggled then
+            createTween(switch, {BackgroundColor3 = COLORS.ToggleOn}, 0.2)
+            createTween(knob, {Position = UDim2.new(1, -21, 0.5, -9)}, 0.2)
+        else
+            createTween(switch, {BackgroundColor3 = COLORS.ToggleOff}, 0.2)
+            createTween(knob, {Position = UDim2.new(0, 3, 0.5, -9)}, 0.2)
+        end
+        fireCallbacks(toggled)
+    end)
+    
+    local obj = {}
+    function obj:OnChanged(callback)
+        callbacks[#callbacks + 1] = callback
+        return obj
+    end
+    function obj:GetState()
+        return toggled
+    end
+    function obj:SetState(value)
+        toggled = value
+        if toggled then
+            switch.BackgroundColor3 = COLORS.ToggleOn
+            knob.Position = UDim2.new(1, -21, 0.5, -9)
+        else
+            switch.BackgroundColor3 = COLORS.ToggleOff
+            knob.Position = UDim2.new(0, 3, 0.5, -9)
+        end
+        fireCallbacks(toggled)
+    end
+    
+    return obj
+end
+
+-- // GUI Aç/Kapat //
+ToggleButton.MouseButton1Click:Connect(function()
+    MainFrame.Visible = not MainFrame.Visible
+end)
+
+CloseButton.MouseButton1Click:Connect(function()
+    MainFrame.Visible = false
+end)
+
+-- // Tabs Oluştur //
+local DungeonTab = createTab("Dungeon", "🚪")
+local SettingsTab = createTab("Settings", "⚙️")
+local CreditsTab = createTab("Credits", "💎")
+
+-- Varsayılan tab
+currentTab = DungeonTab
+DungeonTab.content.Visible = true
+DungeonTab.button.BackgroundColor3 = COLORS.TabSelected
+DungeonTab.button.TextColor3 = COLORS.Accent
+
+-- // --- DUNGEON SEKME İÇERİĞİ --- //
+addSection(DungeonTab, "Dungeon Otomasyonu")
+
+local autoReplayToggle = addToggle(DungeonTab, "Auto Replay", "Dungeon bitince otomatik oy verir", false)
+
+autoReplayToggle:OnChanged(function(value)
     if value then
         task.spawn(function()
-            while autoReplay do
+            while autoReplayToggle:GetState() do
                 pcall(function()
                     local args = { [1] = "sponsor" }
                     game:GetService("ReplicatedStorage").Remotes.DungeonWaveReplayVote:FireServer(unpack(args))
@@ -62,28 +445,18 @@ Tabs.Dungeon:AddToggle("AutoReplay", {
     end
 end)
 
-Tabs.Dungeon:AddSection("Yakinda...")
-Tabs.Dungeon:AddLabel("Soon", { Title = "" }):SetText("Daha fazla özellik eklenecek...")
+addLabel(DungeonTab, " ")
+addSection(DungeonTab, "Yakında...")
+addLabel(DungeonTab, "✨ Daha fazla özellik eklenecek")
 
--- // SETTINGS SEKME //
-local Players = game:GetService("Players")
-local VirtualUser = game:GetService("VirtualUser")
-local player = Players.LocalPlayer
-local antiAFK = false
+-- // --- SETTINGS SEKME İÇERİĞİ --- //
+addSection(SettingsTab, "Genel Ayarlar")
 
-Tabs.Settings:AddSection("Genel Ayarlar")
-
-Tabs.Settings:AddToggle("AntiAFK", {
-    Title = "Anti AFK",
-    Description = "Karakteri kıpırdatmadan AFK olmayı engeller",
-    Default = false
-}):OnChanged(function(value)
-    antiAFK = value
-end)
+local antiAFKToggle = addToggle(SettingsTab, "Anti AFK", "Karakteri kıpırdatmadan AFK olmayı engeller", false)
 
 task.spawn(function()
     while task.wait(10) do
-        if antiAFK then
+        if antiAFKToggle:GetState() then
             pcall(function()
                 VirtualUser:CaptureController()
                 VirtualUser:ClickButton2(Vector2.new())
@@ -92,17 +465,15 @@ task.spawn(function()
     end
 end)
 
-Tabs.Settings:AddSection("Performans")
+addSection(SettingsTab, "Performans")
 
-Tabs.Settings:AddToggle("FPSBoost", {
-    Title = "FPS Boost",
-    Description = "Gereksiz görselleri temizler, gölgeleri kapatır",
-    Default = false
-}):OnChanged(function(value)
+local fpsBoostToggle = addToggle(SettingsTab, "FPS Boost", "Gereksiz görselleri temizler, gölgeleri kapatır", false)
+
+fpsBoostToggle:OnChanged(function(value)
     if value then
-        for _, v in pairs(game:GetService("Workspace"):GetDescendants()) do
+        for _, v in pairs(workspace:GetDescendants()) do
             if v:IsA("Texture") or v:IsA("Decal") then
-                v:Destroy()
+                pcall(function() v:Destroy() end)
             end
         end
         local lighting = game:GetService("Lighting")
@@ -114,26 +485,37 @@ Tabs.Settings:AddToggle("FPSBoost", {
     end
 end)
 
--- // CREDITS SEKME //
-Tabs.Credit:AddSection("ZwacHub")
-Tabs.Credit:AddLabel("Info", { Title = "" }):SetText("v1.0 | Sadece işini kolaylaştırmak için")
-Tabs.Credit:AddLabel("Dev", { Title = "" }):SetText("Developer: Zwac")
+addSection(SettingsTab, "Optimizasyon")
+addLabel(SettingsTab, "⚡ Daha fazla optimizasyon yakında")
 
--- // Save & UI //
-SaveManager:SetLibrary(Fluent)
-InterfaceManager:SetLibrary(Fluent)
-SaveManager:IgnoreThemeSettings()
-SaveManager:SetFolder("ZwacHub/SailorPiece")
-InterfaceManager:SetFolder("ZwacHub/SailorPiece")
+-- // --- CREDITS SEKME İÇERİĞİ --- //
+addSection(CreditsTab, "ZwacHub v1.0")
+addLabel(CreditsTab, "Sadece işini kolaylaştırmak için yapıldı")
+addLabel(CreditsTab, " ")
+addLabel(CreditsTab, "💻 Developer: Zwac")
+addLabel(CreditsTab, "⚡ %100 Organik Kod")
+addLabel(CreditsTab, "📱 Mobil Uyumlu")
+addLabel(CreditsTab, " ")
+addLabel(CreditsTab, "🎯 Sailor Piece Özel")
 
-SaveManager:BuildConfigSection(Tabs.Dungeon)
-SaveManager:BuildConfigSection(Tabs.Settings)
-InterfaceManager:BuildInterfaceSection(Tabs.Dungeon)
-InterfaceManager:BuildInterfaceSection(Tabs.Settings)
+-- Canvas size'ları güncelle
+for _, tab in pairs(tabs) do
+    tab.list:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+        tab.scroll.CanvasSize = UDim2.new(0, 0, 0, tab.list.AbsoluteContentSize.Y + 10)
+    end)
+end
 
--- // Bildirim //
-Fluent:Notify({
-    Title = "ZwacHub",
-    Content = "Başarıyla yüklendi!",
-    Duration = 4
-})
+-- // İlk sekmede canvas'ı hemen güncelle //
+task.wait(0.1)
+for _, tab in pairs(tabs) do
+    tab.scroll.CanvasSize = UDim2.new(0, 0, 0, tab.list.AbsoluteContentSize.Y + 10)
+end
+
+-- // Başlangıç Animasyonu //
+MainFrame.Size = UDim2.new(0, 0, 0, 0)
+MainFrame.Visible = true
+createTween(MainFrame, {Size = UDim2.new(0, 380, 0, 460)}, 0.3)
+task.wait(0.3)
+MainFrame.Visible = false
+
+print("✅ ZwacHub başarıyla yüklendi! %100 Organik Kod")
