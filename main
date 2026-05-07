@@ -1,440 +1,393 @@
--- // ZwacHub - %100 Organik GUI //
--- // Sailor Piece için özel yapıldı //
+-- // ZwacHub v2.0 - Yatay Tasarım %100 Organik //
+-- // Sailor Piece için özel //
 
 local Players = game:GetService("Players")
 local Player = Players.LocalPlayer
-local Mouse = Player:GetMouse()
 local VirtualUser = game:GetService("VirtualUser")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
-local RunService = game:GetService("RunService")
 
--- // Ana GUI Elementleri //
+-- // Ana GUI //
 local ScreenGui = Instance.new("ScreenGui")
-local MainFrame = Instance.new("Frame")
-local TopBar = Instance.new("Frame")
-local Title = Instance.new("TextLabel")
-local CloseButton = Instance.new("TextButton")
-local TabFrame = Instance.new("Frame")
-local ContentFrame = Instance.new("Frame")
-
--- // Toggle Buton (Sürüklenebilir) //
-local ToggleButton = Instance.new("TextButton")
-
--- // GUI Ayarları //
 ScreenGui.Name = "ZwacHub"
 ScreenGui.Parent = game:GetService("CoreGui")
 
--- Koruma
 if syn and syn.protect_gui then
     syn.protect_gui(ScreenGui)
 end
 
--- // Stil Sabitleri //
-local COLORS = {
-    Background = Color3.fromRGB(15, 15, 17),
-    Frame = Color3.fromRGB(25, 25, 28),
+-- // Renk Paleti //
+local C = {
+    BG = Color3.fromRGB(18, 18, 20),
+    Frame = Color3.fromRGB(28, 28, 32),
     Accent = Color3.fromRGB(220, 220, 230),
-    AccentDim = Color3.fromRGB(180, 180, 190),
     Text = Color3.fromRGB(240, 240, 250),
     TextDim = Color3.fromRGB(150, 150, 160),
-    ToggleOn = Color3.fromRGB(220, 220, 230),
-    ToggleOff = Color3.fromRGB(45, 45, 50),
-    TabSelected = Color3.fromRGB(35, 35, 40),
-    TabNormal = Color3.fromRGB(25, 25, 28)
+    TabActive = Color3.fromRGB(220, 220, 230),
+    TabInactive = Color3.fromRGB(60, 60, 65),
+    SwitchOn = Color3.fromRGB(220, 220, 230),
+    SwitchOff = Color3.fromRGB(50, 50, 55)
 }
 
--- // Yardımcı Fonksiyonlar //
-local function createTween(instance, properties, duration)
-    local tweenInfo = TweenInfo.new(duration or 0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-    local tween = TweenService:Create(instance, tweenInfo, properties)
-    tween:Play()
-    return tween
+-- // Yardımcı //
+local function Tween(obj, props, dur)
+    return TweenService:Create(obj, TweenInfo.new(dur or 0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), props):Play()
 end
 
-local function round(num, decimal)
-    local mult = 10 ^ (decimal or 0)
-    return math.floor(num * mult + 0.5) / mult
-end
-
--- // Sürüklenebilir Yapma Fonksiyonu //
-local function makeDraggable(frame, dragElement)
-    local dragging = false
-    local dragStart = nil
-    local startPos = nil
-    
-    dragElement = dragElement or frame
-    
-    dragElement.InputBegan:Connect(function(input)
+-- // Sürükleme Sistemi //
+local function MakeDraggable(frame, handle)
+    local drag, start, pos = false, nil, nil
+    handle = handle or frame
+    handle.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            dragging = true
-            dragStart = input.Position
-            startPos = frame.Position
+            drag, start, pos = true, input.Position, frame.Position
         end
     end)
-    
-    dragElement.InputChanged:Connect(function(input)
-        if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-            local delta = input.Position - dragStart
-            frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    handle.InputChanged:Connect(function(input)
+        if drag and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+            local delta = input.Position - start
+            frame.Position = UDim2.new(pos.X.Scale, pos.X.Offset + delta.X, pos.Y.Scale, pos.Y.Offset + delta.Y)
         end
     end)
-    
     UserInputService.InputEnded:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            dragging = false
+            drag = false
         end
     end)
 end
 
--- // Toggle Buton (Küçük Kare) //
-ToggleButton.Name = "ToggleButton"
-ToggleButton.Size = UDim2.new(0, 40, 0, 40)
-ToggleButton.Position = UDim2.new(0.5, 0, 0.5, 0)
-ToggleButton.BackgroundColor3 = Color3.fromRGB(25, 25, 28)
-ToggleButton.BackgroundTransparency = 0.3
-ToggleButton.BorderSizePixel = 0
-ToggleButton.Text = "⏣"
-ToggleButton.TextColor3 = COLORS.Accent
-ToggleButton.TextSize = 20
-ToggleButton.Font = Enum.Font.GothamBold
-ToggleButton.Parent = ScreenGui
+-- // KÜÇÜK SÜRÜKLENEBİLİR BUTON //
+local ToggleBtn = Instance.new("TextButton")
+ToggleBtn.Size = UDim2.new(0, 42, 0, 42)
+ToggleBtn.Position = UDim2.new(0.5, 0, 0.5, 0)
+ToggleBtn.BackgroundColor3 = C.Frame
+ToggleBtn.BackgroundTransparency = 0.4
+ToggleBtn.BorderSizePixel = 0
+ToggleBtn.Text = "⏣"
+ToggleBtn.TextColor3 = C.Accent
+ToggleBtn.TextSize = 20
+ToggleBtn.Font = Enum.Font.GothamBold
+ToggleBtn.Parent = ScreenGui
 
--- Toggle Butona Yuvarlak Köşe
-local toggleCorner = Instance.new("UICorner")
-toggleCorner.CornerRadius = UDim.new(0, 6)
-toggleCorner.Parent = ToggleButton
+local ToggleCorner = Instance.new("UICorner")
+ToggleCorner.CornerRadius = UDim.new(0, 8)
+ToggleCorner.Parent = ToggleBtn
 
-makeDraggable(ToggleButton)
+MakeDraggable(ToggleBtn)
 
--- // Ana Frame //
-MainFrame.Name = "MainFrame"
-MainFrame.Size = UDim2.new(0, 380, 0, 460)
-MainFrame.Position = UDim2.new(0.5, -190, 0.5, -230)
-MainFrame.BackgroundColor3 = COLORS.Background
-MainFrame.BackgroundTransparency = 0.15
-MainFrame.BorderSizePixel = 0
-MainFrame.Visible = false
-MainFrame.ClipsDescendants = true
-MainFrame.Parent = ScreenGui
+-- // ANA FRAME - YATAY TASARIM //
+local Main = Instance.new("Frame")
+Main.Name = "Main"
+Main.Size = UDim2.new(0, 500, 0, 320)
+Main.Position = UDim2.new(0.5, -250, 0.5, -160)
+Main.BackgroundColor3 = C.BG
+Main.BackgroundTransparency = 0.1
+Main.BorderSizePixel = 0
+Main.Visible = false
+Main.ClipsDescendants = true
+Main.Parent = ScreenGui
 
-local mainCorner = Instance.new("UICorner")
-mainCorner.CornerRadius = UDim.new(0, 12)
-mainCorner.Parent = MainFrame
+local MainCorner = Instance.new("UICorner")
+MainCorner.CornerRadius = UDim.new(0, 14)
+MainCorner.Parent = Main
 
--- İnce Border Efekti
-local border = Instance.new("UIStroke")
-border.Thickness = 1
-border.Color = Color3.fromRGB(50, 50, 55)
-border.Transparency = 0.5
-border.Parent = MainFrame
+local Border = Instance.new("UIStroke")
+Border.Thickness = 1
+Border.Color = Color3.fromRGB(45, 45, 50)
+Border.Transparency = 0.6
+Border.Parent = Main
 
--- // Üst Bar //
-TopBar.Name = "TopBar"
-TopBar.Size = UDim2.new(1, 0, 0, 45)
-TopBar.BackgroundColor3 = COLORS.Frame
-TopBar.BackgroundTransparency = 0.3
+-- // ÜST BAR //
+local TopBar = Instance.new("Frame")
+TopBar.Size = UDim2.new(1, 0, 0, 50)
+TopBar.BackgroundColor3 = C.Frame
+TopBar.BackgroundTransparency = 0.5
 TopBar.BorderSizePixel = 0
-TopBar.Parent = MainFrame
+TopBar.Parent = Main
 
-local topCorner = Instance.new("UICorner")
-topCorner.CornerRadius = UDim.new(0, 12)
-topCorner.Parent = TopBar
+local TopCorner = Instance.new("UICorner")
+TopCorner.CornerRadius = UDim.new(0, 14)
+TopCorner.Parent = TopBar
 
-Title.Name = "Title"
-Title.Size = UDim2.new(0, 150, 1, 0)
-Title.Position = UDim2.new(0, 15, 0, 0)
-Title.BackgroundTransparency = 1
-Title.Text = "ZwacHub"
-Title.TextColor3 = COLORS.Accent
-Title.TextSize = 18
-Title.Font = Enum.Font.GothamBold
-Title.TextXAlignment = Enum.TextXAlignment.Left
-Title.Parent = TopBar
+-- ZwacHub Logo
+local Logo = Instance.new("TextLabel")
+Logo.Size = UDim2.new(1, -50, 1, 0)
+Logo.Position = UDim2.new(0, 18, 0, 0)
+Logo.BackgroundTransparency = 1
+Logo.Text = "ZwacHub  ·  Sailor Piece"
+Logo.TextColor3 = C.Accent
+Logo.TextSize = 15
+Logo.Font = Enum.Font.GothamBold
+Logo.TextXAlignment = Enum.TextXAlignment.Left
+Logo.Parent = TopBar
 
--- // Kapatma Butonu //
-CloseButton.Name = "CloseButton"
-CloseButton.Size = UDim2.new(0, 30, 0, 30)
-CloseButton.Position = UDim2.new(1, -40, 0, 8)
-CloseButton.BackgroundColor3 = Color3.fromRGB(35, 35, 40)
-CloseButton.BackgroundTransparency = 0.5
-CloseButton.BorderSizePixel = 0
-CloseButton.Text = "✕"
-CloseButton.TextColor3 = COLORS.Text
-CloseButton.TextSize = 14
-CloseButton.Font = Enum.Font.GothamBold
-CloseButton.Parent = TopBar
+-- Kapatma
+local Close = Instance.new("TextButton")
+Close.Size = UDim2.new(0, 32, 0, 32)
+Close.Position = UDim2.new(1, -42, 0, 9)
+Close.BackgroundColor3 = Color3.fromRGB(40, 40, 45)
+Close.BackgroundTransparency = 0.4
+Close.BorderSizePixel = 0
+Close.Text = "✕"
+Close.TextColor3 = C.Text
+Close.TextSize = 14
+Close.Font = Enum.Font.GothamBold
+Close.Parent = TopBar
 
-local closeCorner = Instance.new("UICorner")
-closeCorner.CornerRadius = UDim.new(0, 6)
-closeCorner.Parent = CloseButton
+local CloseCorner = Instance.new("UICorner")
+CloseCorner.CornerRadius = UDim.new(0, 8)
+CloseCorner.Parent = Close
 
--- // Tab Frame //
-TabFrame.Name = "TabFrame"
-TabFrame.Size = UDim2.new(1, 0, 0, 35)
-TabFrame.Position = UDim2.new(0, 0, 0, 50)
-TabFrame.BackgroundColor3 = COLORS.Frame
-TabFrame.BackgroundTransparency = 0.5
-TabFrame.BorderSizePixel = 0
-TabFrame.Parent = MainFrame
+MakeDraggable(Main, TopBar)
 
--- // Content Frame //
-ContentFrame.Name = "ContentFrame"
-ContentFrame.Size = UDim2.new(1, -20, 1, -100)
-ContentFrame.Position = UDim2.new(0, 10, 0, 95)
-ContentFrame.BackgroundTransparency = 1
-ContentFrame.Parent = MainFrame
+-- // TAB SİSTEMİ - YATAY SOLDA //
+local TabContainer = Instance.new("Frame")
+TabContainer.Size = UDim2.new(0, 120, 1, -50)
+TabContainer.Position = UDim2.new(0, 0, 0, 50)
+TabContainer.BackgroundColor3 = C.Frame
+TabContainer.BackgroundTransparency = 0.3
+TabContainer.BorderSizePixel = 0
+TabContainer.Parent = Main
 
-makeDraggable(MainFrame, TopBar)
+-- İçerik Alanı
+local Content = Instance.new("Frame")
+Content.Size = UDim2.new(1, -120, 1, -50)
+Content.Position = UDim2.new(0, 120, 0, 50)
+Content.BackgroundTransparency = 1
+Content.Parent = Main
 
--- // Tab Sistemi //
 local tabs = {}
 local currentTab = nil
 
-local function createTab(name, icon)
-    local tabButton = Instance.new("TextButton")
-    tabButton.Name = name
-    tabButton.Size = UDim2.new(0, 120, 1, 0)
-    tabButton.BackgroundColor3 = COLORS.TabNormal
-    tabButton.BorderSizePixel = 0
-    tabButton.Text = (icon or "") .. "  " .. name
-    tabButton.TextColor3 = COLORS.TextDim
-    tabButton.TextSize = 13
-    tabButton.Font = Enum.Font.GothamSemibold
-    tabButton.Parent = TabFrame
-    
-    local tabCorner = Instance.new("UICorner")
-    tabCorner.CornerRadius = UDim.new(0, 4)
-    tabCorner.Parent = tabButton
-    
-    -- İçerik Frame'i
-    local tabContent = Instance.new("Frame")
-    tabContent.Name = name .. "Content"
-    tabContent.Size = UDim2.new(1, 0, 1, 0)
-    tabContent.BackgroundTransparency = 1
-    tabContent.Visible = false
-    tabContent.Parent = ContentFrame
-    
-    -- Scrolling Frame
-    local scrollFrame = Instance.new("ScrollingFrame")
-    scrollFrame.Name = "Scroll"
-    scrollFrame.Size = UDim2.new(1, 0, 1, 0)
-    scrollFrame.BackgroundTransparency = 1
-    scrollFrame.BorderSizePixel = 0
-    scrollFrame.ScrollBarThickness = 3
-    scrollFrame.ScrollBarImageColor3 = COLORS.AccentDim
-    scrollFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
-    scrollFrame.Parent = tabContent
-    
-    local uiListLayout = Instance.new("UIListLayout")
-    uiListLayout.Padding = UDim.new(0, 8)
-    uiListLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    uiListLayout.Parent = scrollFrame
-    
-    local tabData = {
-        button = tabButton,
-        content = tabContent,
-        scroll = scrollFrame,
-        list = uiListLayout
-    }
-    
-    local function selectTab()
+local function CreateTab(name, icon)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(1, -14, 0, 38)
+    btn.Position = UDim2.new(0, 7, 0, 12 + (#tabs * 48))
+    btn.BackgroundColor3 = (#tabs == 0) and C.TabActive or C.TabInactive
+    btn.BackgroundTransparency = (#tabs == 0) and 0.1 or 0
+    btn.BorderSizePixel = 0
+    btn.Text = icon .. "  " .. name
+    btn.TextColor3 = (#tabs == 0) and Color3.fromRGB(20, 20, 22) or C.Text
+    btn.TextSize = 13
+    btn.Font = Enum.Font.GothamSemibold
+    btn.AutoButtonColor = false
+    btn.Parent = TabContainer
+
+    local BtnCorner = Instance.new("UICorner")
+    BtnCorner.CornerRadius = UDim.new(0, 8)
+    BtnCorner.Parent = btn
+
+    -- İçerik Scrolling
+    local contentFrame = Instance.new("ScrollingFrame")
+    contentFrame.Size = UDim2.new(1, -20, 1, -20)
+    contentFrame.Position = UDim2.new(0, 10, 0, 10)
+    contentFrame.BackgroundTransparency = 1
+    contentFrame.BorderSizePixel = 0
+    contentFrame.ScrollBarThickness = 2
+    contentFrame.ScrollBarImageColor3 = C.Accent
+    contentFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
+    contentFrame.Visible = (#tabs == 0)
+    contentFrame.Parent = Content
+
+    local list = Instance.new("UIListLayout")
+    list.Padding = UDim.new(0, 10)
+    list.SortOrder = Enum.SortOrder.LayoutOrder
+    list.Parent = contentFrame
+
+    list:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+        contentFrame.CanvasSize = UDim2.new(0, 0, 0, list.AbsoluteContentSize.Y + 20)
+    end)
+
+    local tabData = { button = btn, content = contentFrame, list = list }
+
+    btn.MouseButton1Click:Connect(function()
         if currentTab == tabData then return end
         if currentTab then
             currentTab.content.Visible = false
-            createTween(currentTab.button, {BackgroundColor3 = COLORS.TabNormal, TextColor3 = COLORS.TextDim}, 0.15)
+            currentTab.button.BackgroundColor3 = C.TabInactive
+            currentTab.button.BackgroundTransparency = 0
+            currentTab.button.TextColor3 = C.Text
         end
-        tabContent.Visible = true
-        createTween(tabButton, {BackgroundColor3 = COLORS.TabSelected, TextColor3 = COLORS.Accent}, 0.15)
+        contentFrame.Visible = true
+        btn.BackgroundColor3 = C.TabActive
+        btn.BackgroundTransparency = 0.1
+        btn.TextColor3 = Color3.fromRGB(20, 20, 22)
         currentTab = tabData
-    end
-    
-    tabButton.MouseButton1Click:Connect(selectTab)
+        task.wait(0.05)
+        contentFrame.CanvasSize = UDim2.new(0, 0, 0, list.AbsoluteContentSize.Y + 20)
+    end)
+
     tabs[#tabs + 1] = tabData
-    
-    return tabData
+    if #tabs == 1 then currentTab = tabData end
+
+    return {
+        scroll = contentFrame,
+        list = list,
+        button = btn
+    }
 end
 
 -- // Element Oluşturucular //
-local function addLabel(tab, text)
-    local label = Instance.new("TextLabel")
-    label.Size = UDim2.new(1, -10, 0, 20)
-    label.BackgroundTransparency = 1
-    label.Text = text
-    label.TextColor3 = COLORS.TextDim
-    label.TextSize = 12
-    label.Font = Enum.Font.Gotham
-    label.TextXAlignment = Enum.TextXAlignment.Left
-    label.Parent = tab.scroll
-    return label
-end
-
-local function addSection(tab, title)
+local function AddSection(tab, title)
     local section = Instance.new("Frame")
-    section.Size = UDim2.new(1, -10, 0, 30)
+    section.Size = UDim2.new(1, 0, 0, 26)
     section.BackgroundTransparency = 1
     section.Parent = tab.scroll
-    
-    local sectionText = Instance.new("TextLabel")
-    sectionText.Size = UDim2.new(1, 0, 1, 0)
-    sectionText.BackgroundTransparency = 1
-    sectionText.Text = title
-    sectionText.TextColor3 = COLORS.Accent
-    sectionText.TextSize = 14
-    sectionText.Font = Enum.Font.GothamBold
-    sectionText.TextXAlignment = Enum.TextXAlignment.Left
-    sectionText.Parent = section
-    
+
+    local text = Instance.new("TextLabel")
+    text.Size = UDim2.new(1, 0, 1, 0)
+    text.BackgroundTransparency = 1
+    text.Text = title
+    text.TextColor3 = C.Accent
+    text.TextSize = 12
+    text.Font = Enum.Font.GothamBold
+    text.TextXAlignment = Enum.TextXAlignment.Left
+    text.Parent = section
+
     local line = Instance.new("Frame")
     line.Size = UDim2.new(1, 0, 0, 1)
     line.Position = UDim2.new(0, 0, 1, 0)
-    line.BackgroundColor3 = COLORS.Accent
-    line.BackgroundTransparency = 0.7
+    line.BackgroundColor3 = C.Accent
+    line.BackgroundTransparency = 0.8
     line.BorderSizePixel = 0
     line.Parent = section
-    
+
     return section
 end
 
-local function addToggle(tab, title, description, default)
-    local toggleFrame = Instance.new("Frame")
-    toggleFrame.Size = UDim2.new(1, -10, 0, 35)
-    toggleFrame.BackgroundColor3 = COLORS.Frame
-    toggleFrame.BackgroundTransparency = 0.3
-    toggleFrame.BorderSizePixel = 0
-    toggleFrame.Parent = tab.scroll
-    
-    local toggleCorner = Instance.new("UICorner")
-    toggleCorner.CornerRadius = UDim.new(0, 8)
-    toggleCorner.Parent = toggleFrame
-    
-    local infoFrame = Instance.new("Frame")
-    infoFrame.Size = UDim2.new(1, -60, 1, 0)
-    infoFrame.BackgroundTransparency = 1
-    infoFrame.Parent = toggleFrame
-    
-    local titleLabel = Instance.new("TextLabel")
-    titleLabel.Size = UDim2.new(1, -5, 0, 18)
-    titleLabel.Position = UDim2.new(0, 10, 0, 3)
-    titleLabel.BackgroundTransparency = 1
-    titleLabel.Text = title
-    titleLabel.TextColor3 = COLORS.Text
-    titleLabel.TextSize = 13
-    titleLabel.Font = Enum.Font.GothamSemibold
-    titleLabel.TextXAlignment = Enum.TextXAlignment.Left
-    titleLabel.Parent = infoFrame
-    
-    local descLabel = Instance.new("TextLabel")
-    descLabel.Size = UDim2.new(1, -5, 0, 12)
-    descLabel.Position = UDim2.new(0, 10, 0, 20)
-    descLabel.BackgroundTransparency = 1
-    descLabel.Text = description
-    descLabel.TextColor3 = COLORS.TextDim
-    descLabel.TextSize = 10
-    descLabel.Font = Enum.Font.Gotham
-    descLabel.TextXAlignment = Enum.TextXAlignment.Left
-    descLabel.Parent = infoFrame
-    
-    -- Toggle Switch
+local function AddLabel(tab, text)
+    local lbl = Instance.new("TextLabel")
+    lbl.Size = UDim2.new(1, 0, 0, 16)
+    lbl.BackgroundTransparency = 1
+    lbl.Text = text
+    lbl.TextColor3 = C.TextDim
+    lbl.TextSize = 11
+    lbl.Font = Enum.Font.Gotham
+    lbl.TextXAlignment = Enum.TextXAlignment.Left
+    lbl.Parent = tab.scroll
+    return lbl
+end
+
+local function AddToggle(tab, title, desc, default)
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(1, 0, 0, 50)
+    frame.BackgroundColor3 = C.Frame
+    frame.BackgroundTransparency = 0.5
+    frame.BorderSizePixel = 0
+    frame.Parent = tab.scroll
+
+    local fCorner = Instance.new("UICorner")
+    fCorner.CornerRadius = UDim.new(0, 8)
+    fCorner.Parent = frame
+
+    local titleLbl = Instance.new("TextLabel")
+    titleLbl.Size = UDim2.new(1, -60, 0, 20)
+    titleLbl.Position = UDim2.new(0, 12, 0, 6)
+    titleLbl.BackgroundTransparency = 1
+    titleLbl.Text = title
+    titleLbl.TextColor3 = C.Text
+    titleLbl.TextSize = 12
+    titleLbl.Font = Enum.Font.GothamSemibold
+    titleLbl.TextXAlignment = Enum.TextXAlignment.Left
+    titleLbl.Parent = frame
+
+    local descLbl = Instance.new("TextLabel")
+    descLbl.Size = UDim2.new(1, -60, 0, 14)
+    descLbl.Position = UDim2.new(0, 12, 0, 28)
+    descLbl.BackgroundTransparency = 1
+    descLbl.Text = desc
+    descLbl.TextColor3 = C.TextDim
+    descLbl.TextSize = 10
+    descLbl.Font = Enum.Font.Gotham
+    descLbl.TextXAlignment = Enum.TextXAlignment.Left
+    descLbl.Parent = frame
+
+    -- Switch
     local switch = Instance.new("TextButton")
     switch.Size = UDim2.new(0, 44, 0, 24)
-    switch.Position = UDim2.new(1, -52, 0.5, -12)
-    switch.BackgroundColor3 = default and COLORS.ToggleOn or COLORS.ToggleOff
+    switch.Position = UDim2.new(1, -56, 0, 13)
+    switch.BackgroundColor3 = default and C.SwitchOn or C.SwitchOff
     switch.BorderSizePixel = 0
     switch.Text = ""
     switch.AutoButtonColor = false
-    switch.Parent = toggleFrame
-    
-    local switchCorner = Instance.new("UICorner")
-    switchCorner.CornerRadius = UDim.new(1, 0)
-    switchCorner.Parent = switch
-    
+    switch.Parent = frame
+
+    local sCorner = Instance.new("UICorner")
+    sCorner.CornerRadius = UDim.new(1, 0)
+    sCorner.Parent = switch
+
     local knob = Instance.new("Frame")
     knob.Size = UDim2.new(0, 18, 0, 18)
     knob.Position = default and UDim2.new(1, -21, 0.5, -9) or UDim2.new(0, 3, 0.5, -9)
     knob.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    knob.BorderSizePixel = 0
     knob.BackgroundTransparency = 0.1
+    knob.BorderSizePixel = 0
     knob.Parent = switch
-    
-    local knobCorner = Instance.new("UICorner")
-    knobCorner.CornerRadius = UDim.new(1, 0)
-    knobCorner.Parent = knob
-    
+
+    local kCorner = Instance.new("UICorner")
+    kCorner.CornerRadius = UDim.new(1, 0)
+    kCorner.Parent = knob
+
     local toggled = default or false
     local callbacks = {}
-    
-    local function fireCallbacks(val)
+
+    local function fire(val)
         toggled = val
         for _, cb in ipairs(callbacks) do
             task.spawn(function() cb(val) end)
         end
     end
-    
+
     switch.MouseButton1Click:Connect(function()
         toggled = not toggled
         if toggled then
-            createTween(switch, {BackgroundColor3 = COLORS.ToggleOn}, 0.2)
-            createTween(knob, {Position = UDim2.new(1, -21, 0.5, -9)}, 0.2)
+            Tween(switch, {BackgroundColor3 = C.SwitchOn}, 0.2)
+            Tween(knob, {Position = UDim2.new(1, -21, 0.5, -9)}, 0.2)
         else
-            createTween(switch, {BackgroundColor3 = COLORS.ToggleOff}, 0.2)
-            createTween(knob, {Position = UDim2.new(0, 3, 0.5, -9)}, 0.2)
+            Tween(switch, {BackgroundColor3 = C.SwitchOff}, 0.2)
+            Tween(knob, {Position = UDim2.new(0, 3, 0.5, -9)}, 0.2)
         end
-        fireCallbacks(toggled)
+        fire(toggled)
     end)
-    
-    local obj = {}
-    function obj:OnChanged(callback)
-        callbacks[#callbacks + 1] = callback
-        return obj
-    end
-    function obj:GetState()
-        return toggled
-    end
-    function obj:SetState(value)
-        toggled = value
-        if toggled then
-            switch.BackgroundColor3 = COLORS.ToggleOn
-            knob.Position = UDim2.new(1, -21, 0.5, -9)
-        else
-            switch.BackgroundColor3 = COLORS.ToggleOff
-            knob.Position = UDim2.new(0, 3, 0.5, -9)
+
+    return {
+        OnChanged = function(self, cb)
+            callbacks[#callbacks + 1] = cb
+            return self
+        end,
+        GetState = function()
+            return toggled
+        end,
+        SetState = function(val)
+            toggled = val
+            switch.BackgroundColor3 = val and C.SwitchOn or C.SwitchOff
+            knob.Position = val and UDim2.new(1, -21, 0.5, -9) or UDim2.new(0, 3, 0.5, -9)
         end
-        fireCallbacks(toggled)
-    end
-    
-    return obj
+    }
 end
 
--- // GUI Aç/Kapat //
-ToggleButton.MouseButton1Click:Connect(function()
-    MainFrame.Visible = not MainFrame.Visible
+-- // GUI AÇ/KAPAT //
+ToggleBtn.MouseButton1Click:Connect(function()
+    Main.Visible = not Main.Visible
 end)
 
-CloseButton.MouseButton1Click:Connect(function()
-    MainFrame.Visible = false
+Close.MouseButton1Click:Connect(function()
+    Main.Visible = false
 end)
 
--- // Tabs Oluştur //
-local DungeonTab = createTab("Dungeon", "🚪")
-local SettingsTab = createTab("Settings", "⚙️")
-local CreditsTab = createTab("Credits", "💎")
+-- // ==================== SEKMELER ==================== //
+local GameTab = CreateTab("Game", "🎮")
+local SettingsTab = CreateTab("Settings", "⚙️")
 
--- Varsayılan tab
-currentTab = DungeonTab
-DungeonTab.content.Visible = true
-DungeonTab.button.BackgroundColor3 = COLORS.TabSelected
-DungeonTab.button.TextColor3 = COLORS.Accent
+-- // --- GAME SEKME --- //
+AddSection(GameTab, "Dungeon Otomasyonu")
 
--- // --- DUNGEON SEKME İÇERİĞİ --- //
-addSection(DungeonTab, "Dungeon Otomasyonu")
+local autoReplay = AddToggle(GameTab, "Auto Replay", "Her 10 saniyede bir Replay eventini atar", false)
 
-local autoReplayToggle = addToggle(DungeonTab, "Auto Replay", "Dungeon bitince otomatik oy verir", false)
-
-autoReplayToggle:OnChanged(function(value)
-    if value then
+autoReplay:OnChanged(function(val)
+    if val then
         task.spawn(function()
-            while autoReplayToggle:GetState() do
+            while autoReplay:GetState() do
                 pcall(function()
                     local args = { [1] = "sponsor" }
                     game:GetService("ReplicatedStorage").Remotes.DungeonWaveReplayVote:FireServer(unpack(args))
@@ -445,18 +398,17 @@ autoReplayToggle:OnChanged(function(value)
     end
 end)
 
-addLabel(DungeonTab, " ")
-addSection(DungeonTab, "Yakında...")
-addLabel(DungeonTab, "✨ Daha fazla özellik eklenecek")
+AddSection(GameTab, "Yakında...")
+AddLabel(GameTab, "✨ Daha fazla özellik geliyor")
 
--- // --- SETTINGS SEKME İÇERİĞİ --- //
-addSection(SettingsTab, "Genel Ayarlar")
+-- // --- SETTINGS SEKME --- //
+AddSection(SettingsTab, "Genel")
 
-local antiAFKToggle = addToggle(SettingsTab, "Anti AFK", "Karakteri kıpırdatmadan AFK olmayı engeller", false)
+local antiAFK = AddToggle(SettingsTab, "Anti AFK", "Karakteri kıpırdatmadan AFK engeller", false)
 
 task.spawn(function()
     while task.wait(10) do
-        if antiAFKToggle:GetState() then
+        if antiAFK:GetState() then
             pcall(function()
                 VirtualUser:CaptureController()
                 VirtualUser:ClickButton2(Vector2.new())
@@ -465,57 +417,36 @@ task.spawn(function()
     end
 end)
 
-addSection(SettingsTab, "Performans")
+local fpsBoost = AddToggle(SettingsTab, "FPS Boost", "Gereksiz textureları temizler", false)
 
-local fpsBoostToggle = addToggle(SettingsTab, "FPS Boost", "Gereksiz görselleri temizler, gölgeleri kapatır", false)
-
-fpsBoostToggle:OnChanged(function(value)
-    if value then
+fpsBoost:OnChanged(function(val)
+    if val then
         for _, v in pairs(workspace:GetDescendants()) do
             if v:IsA("Texture") or v:IsA("Decal") then
                 pcall(function() v:Destroy() end)
             end
         end
-        local lighting = game:GetService("Lighting")
-        lighting.GlobalShadows = false
-        lighting.FogEnd = 9e9
-        pcall(function()
-            settings().Rendering.QualityLevel = 1
-        end)
+        game:GetService("Lighting").GlobalShadows = false
+        game:GetService("Lighting").FogEnd = 9e9
+        pcall(function() settings().Rendering.QualityLevel = 1 end)
     end
 end)
 
-addSection(SettingsTab, "Optimizasyon")
-addLabel(SettingsTab, "⚡ Daha fazla optimizasyon yakında")
+AddSection(SettingsTab, "Optimizasyon")
+AddLabel(SettingsTab, "⚡ Ayarlar otomatik kaydedilmez")
 
--- // --- CREDITS SEKME İÇERİĞİ --- //
-addSection(CreditsTab, "ZwacHub v1.0")
-addLabel(CreditsTab, "Sadece işini kolaylaştırmak için yapıldı")
-addLabel(CreditsTab, " ")
-addLabel(CreditsTab, "💻 Developer: Zwac")
-addLabel(CreditsTab, "⚡ %100 Organik Kod")
-addLabel(CreditsTab, "📱 Mobil Uyumlu")
-addLabel(CreditsTab, " ")
-addLabel(CreditsTab, "🎯 Sailor Piece Özel")
-
--- Canvas size'ları güncelle
+-- // Canvas Güncelle //
 for _, tab in pairs(tabs) do
-    tab.list:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-        tab.scroll.CanvasSize = UDim2.new(0, 0, 0, tab.list.AbsoluteContentSize.Y + 10)
-    end)
+    task.wait(0.05)
+    tab.content.CanvasSize = UDim2.new(0, 0, 0, tab.list.AbsoluteContentSize.Y + 20)
 end
 
--- // İlk sekmede canvas'ı hemen güncelle //
-task.wait(0.1)
-for _, tab in pairs(tabs) do
-    tab.scroll.CanvasSize = UDim2.new(0, 0, 0, tab.list.AbsoluteContentSize.Y + 10)
-end
-
--- // Başlangıç Animasyonu //
-MainFrame.Size = UDim2.new(0, 0, 0, 0)
-MainFrame.Visible = true
-createTween(MainFrame, {Size = UDim2.new(0, 380, 0, 460)}, 0.3)
+-- // Açılış Animasyonu //
+Main.Size = UDim2.new(0, 500, 0, 0)
+Main.Visible = true
+Tween(Main, {Size = UDim2.new(0, 500, 0, 320)}, 0.3)
 task.wait(0.3)
-MainFrame.Visible = false
+Main.Visible = false
 
-print("✅ ZwacHub başarıyla yüklendi! %100 Organik Kod")
+print("✅ ZwacHub v2.0 Yüklendi - Yatay Tasarım")
+print("🎮 Geliştirici: Zwac | %100 Organik Kod")
