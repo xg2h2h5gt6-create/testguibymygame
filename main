@@ -1,4 +1,4 @@
--- // ZwacHub v3.5 - Logo + Anti KB + Auto Skill + Boss Farm //
+-- // ZwacHub v3.5 - Stabilite Yamaları //
 -- // Sailor Piece için özel, %100 Organik //
 
 local Players = game:GetService("Players")
@@ -6,7 +6,6 @@ local Player = Players.LocalPlayer
 local VirtualUser = game:GetService("VirtualUser")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
-local VirtualInputService = game:GetService("VirtualInputService")
 local Lighting = game:GetService("Lighting")
 local RunService = game:GetService("RunService")
 
@@ -15,14 +14,27 @@ local LOGO_IMAGE = "https://raw.githubusercontent.com/xg2h2h5gt6-create/testguib
 
 local BOSS_DATA = {
     ["Sun God"] = {
-        path = "workspace.NPCs.SunGodBoss_Normal",
+        path = "NPCs.SunGodBoss_Normal", -- Baştaki workspace'i kaldırdık, kontrollü ekleyeceğiz
         pos = Vector3.new(-2498, 47, -3214)
     },
     ["Cosmic Being"] = {
-        path = "workspace.NPCs.CosmicBeingBoss_Normal",
+        path = "NPCs.CosmicBeingBoss_Normal",
         pos = Vector3.new(-1824, 3, 1945)
     }
 }
+
+-- // Basit Boss Bulma Fonksiyonu //
+local function findBoss(path)
+    local current = workspace
+    for part in string.gmatch(path, "[^%.]+") do
+        if current and current:FindFirstChild(part) then
+            current = current[part]
+        else
+            return nil
+        end
+    end
+    return current
+end
 
 -- // Ana GUI //
 local ScreenGui = Instance.new("ScreenGui")
@@ -73,18 +85,33 @@ local function MakeDraggable(frame, handle)
     end)
 end
 
--- // KÜÇÜK SÜRÜKLENEBİLİR LOGO BUTON //
-local ToggleBtn = Instance.new("ImageButton")
-ToggleBtn.Size = UDim2.new(0, 42, 0, 42)
-ToggleBtn.Position = UDim2.new(0.5, 0, 0.5, 0)
-ToggleBtn.BackgroundColor3 = C.Frame
-ToggleBtn.BackgroundTransparency = 0.4
-ToggleBtn.BorderSizePixel = 0
-ToggleBtn.Image = LOGO_IMAGE
-ToggleBtn.ScaleType = Enum.ScaleType.Fit
-ToggleBtn.BackgroundTransparency = 0.3
-ToggleBtn.Parent = ScreenGui
+-- // Logo Butonu (ImageButton hata verirse TextButton'a döner) //
+local ToggleBtn
+local logoSuccess = pcall(function()
+    local btn = Instance.new("ImageButton")
+    btn.Size = UDim2.new(0, 42, 0, 42)
+    btn.BackgroundTransparency = 0.3
+    btn.Image = LOGO_IMAGE
+    btn.ScaleType = Enum.ScaleType.Fit
+    btn.Parent = ScreenGui
+    ToggleBtn = btn
+end)
 
+if not logoSuccess or not ToggleBtn then
+    ToggleBtn = Instance.new("TextButton")
+    ToggleBtn.Size = UDim2.new(0, 42, 0, 42)
+    ToggleBtn.BackgroundColor3 = C.Frame
+    ToggleBtn.BackgroundTransparency = 0.4
+    ToggleBtn.BorderSizePixel = 0
+    ToggleBtn.Text = "⏣"
+    ToggleBtn.TextColor3 = C.Accent
+    ToggleBtn.TextSize = 20
+    ToggleBtn.Font = Enum.Font.GothamBold
+    ToggleBtn.Parent = ScreenGui
+    print("Logo yüklenemedi, yedek simge kullanıldı.")
+end
+
+ToggleBtn.Position = UDim2.new(0.5, 0, 0.5, 0)
 local ToggleCorner = Instance.new("UICorner")
 ToggleCorner.CornerRadius = UDim.new(0, 8)
 ToggleCorner.Parent = ToggleBtn
@@ -428,7 +455,7 @@ autoReplay:OnChanged(function(val)
     end
 end)
 
--- // --- GAME SEKME - AUTO SKILL --- //
+-- // --- GAME SEKME - AUTO SKILL (Alternatif Sistem) --- //
 AddSection(GameTab, "Auto Skill")
 local autoSkill = AddToggle(GameTab, "Auto Skill", "Z-X-C-V-F tuşlarını sırayla otomatik atar", false)
 local skillLabel = AddLabel(GameTab, "⏸️ Auto Skill pasif")
@@ -442,9 +469,19 @@ autoSkill:OnChanged(function(val)
                 for _, key in ipairs(keys) do
                     if not autoSkill:GetState() then break end
                     pcall(function()
-                        VirtualInputService:SendKeyEvent(true, key, false, game)
-                        task.wait(0.05)
-                        VirtualInputService:SendKeyEvent(false, key, false, game)
+                        -- VirtualInputService dene, hata verirse keypress kullan
+                        local success = pcall(function()
+                            if VirtualInputService then
+                                VirtualInputService:SendKeyEvent(true, key, false, game)
+                                task.wait(0.05)
+                                VirtualInputService:SendKeyEvent(false, key, false, game)
+                            end
+                        end)
+                        if not success then
+                            keypress(key.KeyCode)
+                            task.wait(0.05)
+                            keyrelease(key.KeyCode)
+                        end
                     end)
                     task.wait(0.3)
                 end
@@ -497,49 +534,20 @@ for bossName, data in pairs(BOSS_DATA) do
             bossStatusLabel.Text = "🔍 " .. bossName .. " taranıyor..."
             task.spawn(function()
                 while toggle:GetState() do
-                    -- Boss modelini kontrol et
-                    local pathParts = data.path:split(".")
-                    local current = workspace
-                    local exists = true
-                    for _, part in ipairs(pathParts) do
-                        if current and current:FindFirstChild(part) then
-                            current = current[part]
-                        else
-                            exists = false
-                            break
-                        end
-                    end
-
-                    if exists then
+                    local bossModel = findBoss(data.path)
+                    if bossModel then
                         bossStatusLabel.Text = "⚔️ " .. bossName .. " bulundu, saldırılıyor!"
-                        -- Işınlan
                         if Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
                             Player.Character.HumanoidRootPart.CFrame = CFrame.new(data.pos)
                         end
 
-                        -- Boss yok olana kadar bekle
                         local bossAlive = true
                         while bossAlive and toggle:GetState() do
                             task.wait(0.2)
-
-                            -- Boss kontrolü
-                            local checkCurrent = workspace
-                            local stillExists = true
-                            for _, part in ipairs(pathParts) do
-                                if checkCurrent and checkCurrent:FindFirstChild(part) then
-                                    checkCurrent = checkCurrent[part]
-                                else
-                                    stillExists = false
-                                    break
-                                end
-                            end
-
-                            if not stillExists then
+                            if not findBoss(data.path) then
                                 bossAlive = false
                                 break
                             end
-
-                            -- Knockback koruması
                             if Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
                                 local dist = (Player.Character.HumanoidRootPart.Position - data.pos).Magnitude
                                 if dist > 2 then
@@ -551,12 +559,10 @@ for bossName, data in pairs(BOSS_DATA) do
                             end
                         end
 
-                        -- Boss öldü
                         killCounters[bossName] = killCounters[bossName] + 1
                         killLabel.Text = "💀 Kill: Sun God " .. killCounters["Sun God"] .. " | Cosmic Being " .. killCounters["Cosmic Being"]
                         bossStatusLabel.Text = "✅ " .. bossName .. " öldü, NPC'ye dönülüyor..."
 
-                        -- Geri dön
                         if savedNpcPos and Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
                             Player.Character.HumanoidRootPart.CFrame = CFrame.new(savedNpcPos)
                         end
@@ -577,7 +583,6 @@ local antiAFK = AddToggle(SettingsTab, "Anti AFK", "Kıpırdamadan AFK engeller"
 local fpsBoost = AddToggle(SettingsTab, "FPS Boost", "Gereksiz texture temizliği", true)
 local lowGraphics = AddToggle(SettingsTab, "Low Graphics", "Işık/gölge kapat, performans", true)
 
--- Anti Knockback (Manuel CFrame Kilitleme)
 AddSection(SettingsTab, "Karakter")
 local antiKB = AddToggle(SettingsTab, "Anti Knockback", "Karakteri sabitler, knockback yemezsin", false)
 local kbSavedPos = nil
@@ -621,7 +626,6 @@ end)
 
 -- FPS Boost ve Low Graphics uygula
 task.spawn(function()
-    -- FPS Boost başlangıç
     for _, v in pairs(workspace:GetDescendants()) do
         if v:IsA("Texture") or v:IsA("Decal") then
             pcall(function() v:Destroy() end)
@@ -657,6 +661,5 @@ Tween(Main, {Size = UDim2.new(0, 500, 0, 350)}, 0.3)
 task.wait(0.3)
 Main.Visible = false
 
-print("✅ ZwacHub v3.5 Yüklendi - Tüm özellikler aktif")
+print("✅ ZwacHub v3.5 Stabil - Tüm özellikler aktif")
 print("🎮 Geliştirici: Zwac | %100 Organik Kod")
-print("🖼️ Logo eklendi | ⚔️ Auto Skill | 🛡️ Anti Knockback | 👾 Çift Boss Farm")
