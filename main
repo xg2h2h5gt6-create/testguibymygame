@@ -1,16 +1,28 @@
--- // ZwacHub v2.1 - Boss Timer Eklendi //
--- // Sailor Piece için özel //
+-- // ZwacHub v3.5 - Logo + Anti KB + Auto Skill + Boss Farm //
+-- // Sailor Piece için özel, %100 Organik //
 
 local Players = game:GetService("Players")
 local Player = Players.LocalPlayer
 local VirtualUser = game:GetService("VirtualUser")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
+local VirtualInputService = game:GetService("VirtualInputService")
+local Lighting = game:GetService("Lighting")
+local RunService = game:GetService("RunService")
 
--- // Boss Konumu Sabit //
-local BOSS_POSITION = Vector3.new(-1824, 3, 1945) -- Senin copypos'un
-local BOSS_WAIT_TIME = 300 -- 5 dakika (saniye)
-local KNOCKBACK_DISTANCE = 50 -- 50 stud'dan fazla uzaklaşırsa geri ışınla
+-- // SABİTLER //
+local LOGO_IMAGE = "https://raw.githubusercontent.com/xg2h2h5gt6-create/testguibymygame/refs/heads/main/F08C21D5-1752-4034-8C85-3A77779C8659.png"
+
+local BOSS_DATA = {
+    ["Sun God"] = {
+        path = "workspace.NPCs.SunGodBoss_Normal",
+        pos = Vector3.new(-2498, 47, -3214)
+    },
+    ["Cosmic Being"] = {
+        path = "workspace.NPCs.CosmicBeingBoss_Normal",
+        pos = Vector3.new(-1824, 3, 1945)
+    }
+}
 
 -- // Ana GUI //
 local ScreenGui = Instance.new("ScreenGui")
@@ -61,17 +73,16 @@ local function MakeDraggable(frame, handle)
     end)
 end
 
--- // KÜÇÜK SÜRÜKLENEBİLİR BUTON //
-local ToggleBtn = Instance.new("TextButton")
+-- // KÜÇÜK SÜRÜKLENEBİLİR LOGO BUTON //
+local ToggleBtn = Instance.new("ImageButton")
 ToggleBtn.Size = UDim2.new(0, 42, 0, 42)
 ToggleBtn.Position = UDim2.new(0.5, 0, 0.5, 0)
 ToggleBtn.BackgroundColor3 = C.Frame
 ToggleBtn.BackgroundTransparency = 0.4
 ToggleBtn.BorderSizePixel = 0
-ToggleBtn.Text = "⏣"
-ToggleBtn.TextColor3 = C.Accent
-ToggleBtn.TextSize = 20
-ToggleBtn.Font = Enum.Font.GothamBold
+ToggleBtn.Image = LOGO_IMAGE
+ToggleBtn.ScaleType = Enum.ScaleType.Fit
+ToggleBtn.BackgroundTransparency = 0.3
 ToggleBtn.Parent = ScreenGui
 
 local ToggleCorner = Instance.new("UICorner")
@@ -83,8 +94,8 @@ MakeDraggable(ToggleBtn)
 -- // ANA FRAME - YATAY TASARIM //
 local Main = Instance.new("Frame")
 Main.Name = "Main"
-Main.Size = UDim2.new(0, 500, 0, 320)
-Main.Position = UDim2.new(0.5, -250, 0.5, -160)
+Main.Size = UDim2.new(0, 500, 0, 350)
+Main.Position = UDim2.new(0.5, -250, 0.5, -175)
 Main.BackgroundColor3 = C.BG
 Main.BackgroundTransparency = 0.1
 Main.BorderSizePixel = 0
@@ -114,7 +125,6 @@ local TopCorner = Instance.new("UICorner")
 TopCorner.CornerRadius = UDim.new(0, 14)
 TopCorner.Parent = TopBar
 
--- ZwacHub Logo
 local Logo = Instance.new("TextLabel")
 Logo.Size = UDim2.new(1, -50, 1, 0)
 Logo.Position = UDim2.new(0, 18, 0, 0)
@@ -126,7 +136,6 @@ Logo.Font = Enum.Font.GothamBold
 Logo.TextXAlignment = Enum.TextXAlignment.Left
 Logo.Parent = TopBar
 
--- Kapatma
 local Close = Instance.new("TextButton")
 Close.Size = UDim2.new(0, 32, 0, 32)
 Close.Position = UDim2.new(1, -42, 0, 9)
@@ -145,7 +154,7 @@ CloseCorner.Parent = Close
 
 MakeDraggable(Main, TopBar)
 
--- // TAB SİSTEMİ - YATAY SOLDA //
+-- // TAB SİSTEMİ //
 local TabContainer = Instance.new("Frame")
 TabContainer.Size = UDim2.new(0, 120, 1, -50)
 TabContainer.Position = UDim2.new(0, 0, 0, 50)
@@ -154,7 +163,6 @@ TabContainer.BackgroundTransparency = 0.3
 TabContainer.BorderSizePixel = 0
 TabContainer.Parent = Main
 
--- İçerik Alanı
 local Content = Instance.new("Frame")
 Content.Size = UDim2.new(1, -120, 1, -50)
 Content.Position = UDim2.new(0, 120, 0, 50)
@@ -182,7 +190,6 @@ local function CreateTab(name, icon)
     BtnCorner.CornerRadius = UDim.new(0, 8)
     BtnCorner.Parent = btn
 
-    -- İçerik Scrolling
     local contentFrame = Instance.new("ScrollingFrame")
     contentFrame.Size = UDim2.new(1, -20, 1, -20)
     contentFrame.Position = UDim2.new(0, 10, 0, 10)
@@ -307,7 +314,6 @@ local function AddToggle(tab, title, desc, default)
     descLbl.TextXAlignment = Enum.TextXAlignment.Left
     descLbl.Parent = frame
 
-    -- Switch
     local switch = Instance.new("TextButton")
     switch.Size = UDim2.new(0, 44, 0, 24)
     switch.Position = UDim2.new(1, -56, 0, 13)
@@ -371,50 +377,24 @@ local function AddToggle(tab, title, desc, default)
     }
 end
 
-local function AddTextBox(tab, placeholder, default)
-    local frame = Instance.new("Frame")
-    frame.Size = UDim2.new(1, 0, 0, 40)
-    frame.BackgroundColor3 = C.Frame
-    frame.BackgroundTransparency = 0.5
-    frame.BorderSizePixel = 0
-    frame.Parent = tab.scroll
+local function AddButton(tab, title, callback)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(1, 0, 0, 35)
+    btn.BackgroundColor3 = C.Frame
+    btn.BackgroundTransparency = 0.5
+    btn.BorderSizePixel = 0
+    btn.Text = title
+    btn.TextColor3 = C.Text
+    btn.TextSize = 13
+    btn.Font = Enum.Font.GothamSemibold
+    btn.Parent = tab.scroll
 
-    local fCorner = Instance.new("UICorner")
-    fCorner.CornerRadius = UDim.new(0, 8)
-    fCorner.Parent = frame
+    local btnCorner = Instance.new("UICorner")
+    btnCorner.CornerRadius = UDim.new(0, 8)
+    btnCorner.Parent = btn
 
-    local textBox = Instance.new("TextBox")
-    textBox.Size = UDim2.new(1, -20, 0, 30)
-    textBox.Position = UDim2.new(0, 10, 0, 5)
-    textBox.BackgroundColor3 = C.BG
-    textBox.BackgroundTransparency = 0.3
-    textBox.BorderSizePixel = 0
-    textBox.Text = default or ""
-    textBox.PlaceholderText = placeholder or "örn: 29:03"
-    textBox.TextColor3 = C.Text
-    textBox.PlaceholderColor3 = C.TextDim
-    textBox.TextSize = 13
-    textBox.Font = Enum.Font.Gotham
-    textBox.ClearTextOnFocus = false
-    textBox.Parent = frame
-
-    local tCorner = Instance.new("UICorner")
-    tCorner.CornerRadius = UDim.new(0, 6)
-    tCorner.Parent = textBox
-
-    return {
-        GetText = function()
-            return textBox.Text
-        end,
-        SetText = function(text)
-            textBox.Text = text
-        end,
-        OnFocusLost = function(callback)
-            textBox.FocusLost:Connect(function(enterPressed)
-                callback(textBox.Text, enterPressed)
-            end)
-        end
-    }
+    btn.MouseButton1Click:Connect(callback)
+    return btn
 end
 
 -- // GUI AÇ/KAPAT //
@@ -430,7 +410,7 @@ end)
 local GameTab = CreateTab("Game", "🎮")
 local SettingsTab = CreateTab("Settings", "⚙️")
 
--- // --- GAME SEKME --- //
+-- // --- GAME SEKME - DUNGEON --- //
 AddSection(GameTab, "Dungeon Otomasyonu")
 local autoReplay = AddToggle(GameTab, "Auto Replay", "Her 10 saniyede bir Replay eventini atar", false)
 
@@ -448,125 +428,186 @@ autoReplay:OnChanged(function(val)
     end
 end)
 
--- // --- BOSS TIMER --- //
-AddSection(GameTab, "Boss Timer")
+-- // --- GAME SEKME - AUTO SKILL --- //
+AddSection(GameTab, "Auto Skill")
+local autoSkill = AddToggle(GameTab, "Auto Skill", "Z-X-C-V-F tuşlarını sırayla otomatik atar", false)
+local skillLabel = AddLabel(GameTab, "⏸️ Auto Skill pasif")
 
-AddLabel(GameTab, "Süre (dakika:saniye)")
-
-local bossTimeInput = AddTextBox(GameTab, "örn: 29:03", "30:00")
-
-local bossTimerToggle = AddToggle(GameTab, "Boss Farm", "Belirtilen sürede bir boss'a ışınlanır", false)
-local bossStatus = AddLabel(GameTab, "⏳ Bekliyor...")
-bossStatus.Size = UDim2.new(1, 0, 0, 20)
-
--- Boss Timer Değişkenleri
-local bossTimerActive = false
-local bossTimerThread = nil
-local savedPosition = nil
-
--- Süre ayrıştırma fonksiyonu
-local function parseTime(input)
-    local minutes, seconds = input:match("(%d+):(%d+)")
-    if minutes and seconds then
-        return tonumber(minutes) * 60 + tonumber(seconds)
-    end
-    return nil
-end
-
--- Boss Timer Ana Döngü
-bossTimerToggle:OnChanged(function(val)
-    bossTimerActive = val
-    
+autoSkill:OnChanged(function(val)
     if val then
-        -- Mevcut konumu kaydet
-        local char = Player.Character
-        if char and char:FindFirstChild("HumanoidRootPart") then
-            savedPosition = char.HumanoidRootPart.Position
-            bossStatus.Text = "📍 Konum kaydedildi: " .. math.floor(savedPosition.X) .. ", " .. math.floor(savedPosition.Y) .. ", " .. math.floor(savedPosition.Z)
-        else
-            bossStatus.Text = "❌ Karakter bulunamadı!"
-            bossTimerToggle.SetState(false)
-            return
-        end
-        
-        bossTimerThread = task.spawn(function()
-            while bossTimerActive do
-                -- Süreyi al ve hesapla
-                local inputTime = bossTimeInput.GetText()
-                local waitTime = parseTime(inputTime)
-                
-                if not waitTime then
-                    bossStatus.Text = "⚠️ Geçersiz format! (dakika:saniye)"
-                    bossTimerActive = false
-                    bossTimerToggle.SetState(false)
-                    break
+        skillLabel.Text = "⚔️ Auto Skill aktif - Z-X-C-V-F"
+        task.spawn(function()
+            while autoSkill:GetState() do
+                local keys = {Enum.KeyCode.Z, Enum.KeyCode.X, Enum.KeyCode.C, Enum.KeyCode.V, Enum.KeyCode.F}
+                for _, key in ipairs(keys) do
+                    if not autoSkill:GetState() then break end
+                    pcall(function()
+                        VirtualInputService:SendKeyEvent(true, key, false, game)
+                        task.wait(0.05)
+                        VirtualInputService:SendKeyEvent(false, key, false, game)
+                    end)
+                    task.wait(0.3)
                 end
-                
-                bossStatus.Text = "⏳ " .. inputTime .. " bekleniyor..."
-                
-                -- Bekleme süresi
-                local elapsed = 0
-                while elapsed < waitTime and bossTimerActive do
-                    task.wait(1)
-                    elapsed = elapsed + 1
-                    bossStatus.Text = "⏳ " .. inputTime .. " | Kalan: " .. (waitTime - elapsed) .. "s"
-                end
-                
-                if not bossTimerActive then break end
-                
-                -- Boss konumuna ışınlanma
-                bossStatus.Text = "⚡ Boss'a ışınlanıyor..."
-                if char and char:FindFirstChild("HumanoidRootPart") then
-                    char.HumanoidRootPart.CFrame = CFrame.new(BOSS_POSITION)
-                end
-                
-                -- Boss alanında 5 dakika bekleme (knockback kontrolü ile)
-                local bossStartTime = tick()
-                local bossEndTime = bossStartTime + BOSS_WAIT_TIME
-                
-                while tick() < bossEndTime and bossTimerActive do
-                    task.wait(0.5)
-                    
-                    -- Knockback kontrolü
-                    if char and char:FindFirstChild("HumanoidRootPart") then
-                        local currentPos = char.HumanoidRootPart.Position
-                        local distance = (currentPos - BOSS_POSITION).Magnitude
-                        
-                        if distance > KNOCKBACK_DISTANCE then
-                            pcall(function()
-                                char.HumanoidRootPart.CFrame = CFrame.new(BOSS_POSITION)
-                            end)
-                            bossStatus.Text = "🔄 Knockback alındı, geri ışınlandı!"
-                        else
-                            local remaining = math.floor(bossEndTime - tick())
-                            bossStatus.Text = "⚔️ Boss kesiliyor | Kalan: " .. remaining .. "s"
-                        end
-                    end
-                end
-                
-                if not bossTimerActive then break end
-                
-                -- Eski konuma geri dön
-                bossStatus.Text = "↩️ Geri dönülüyor..."
-                if char and char:FindFirstChild("HumanoidRootPart") and savedPosition then
-                    char.HumanoidRootPart.CFrame = CFrame.new(savedPosition)
-                end
-                
-                bossStatus.Text = "✅ Döngü tamamlandı, sıradaki bekleniyor..."
             end
         end)
     else
-        if bossTimerThread then
-            bossTimerThread = nil
-        end
-        bossStatus.Text = "⏸️ Durduruldu"
+        skillLabel.Text = "⏸️ Auto Skill pasif"
     end
 end)
 
--- // --- SETTINGS SEKME --- //
-AddSection(SettingsTab, "Genel")
-local antiAFK = AddToggle(SettingsTab, "Anti AFK", "Karakteri kıpırdatmadan AFK engeller", false)
+-- // --- GAME SEKME - BOSS FARM --- //
+AddSection(GameTab, "Boss Farm")
+AddLabel(GameTab, "📍 NPC Konumu: Kaydedilmedi")
 
+local npcPosLabel = AddLabel(GameTab, "NPC: Yok")
+npcPosLabel.Size = UDim2.new(1, 0, 0, 20)
+
+local savedNpcPos = nil
+
+AddButton(GameTab, "💾 NPC Konumunu Kaydet", function()
+    if Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
+        savedNpcPos = Player.Character.HumanoidRootPart.Position
+        npcPosLabel.Text = "📍 NPC: " .. math.floor(savedNpcPos.X) .. ", " .. math.floor(savedNpcPos.Y) .. ", " .. math.floor(savedNpcPos.Z)
+    end
+end)
+
+local bossToggles = {}
+local bossStatusLabel = AddLabel(GameTab, "⏳ Boss bekleniyor...")
+bossStatusLabel.Size = UDim2.new(1, 0, 0, 20)
+
+local killCounters = {
+    ["Sun God"] = 0,
+    ["Cosmic Being"] = 0
+}
+local killLabel = AddLabel(GameTab, "💀 Kill: Sun God 0 | Cosmic Being 0")
+killLabel.Size = UDim2.new(1, 0, 0, 20)
+
+-- Boss Toggle'larını oluştur
+for bossName, data in pairs(BOSS_DATA) do
+    local toggle = AddToggle(GameTab, bossName, "Otomatik " .. bossName .. " keser", false)
+    bossToggles[bossName] = toggle
+
+    toggle:OnChanged(function(val)
+        if val then
+            if not savedNpcPos then
+                toggle:SetState(false)
+                bossStatusLabel.Text = "❌ Önce NPC konumu kaydet!"
+                return
+            end
+            bossStatusLabel.Text = "🔍 " .. bossName .. " taranıyor..."
+            task.spawn(function()
+                while toggle:GetState() do
+                    -- Boss modelini kontrol et
+                    local pathParts = data.path:split(".")
+                    local current = workspace
+                    local exists = true
+                    for _, part in ipairs(pathParts) do
+                        if current and current:FindFirstChild(part) then
+                            current = current[part]
+                        else
+                            exists = false
+                            break
+                        end
+                    end
+
+                    if exists then
+                        bossStatusLabel.Text = "⚔️ " .. bossName .. " bulundu, saldırılıyor!"
+                        -- Işınlan
+                        if Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
+                            Player.Character.HumanoidRootPart.CFrame = CFrame.new(data.pos)
+                        end
+
+                        -- Boss yok olana kadar bekle
+                        local bossAlive = true
+                        while bossAlive and toggle:GetState() do
+                            task.wait(0.2)
+
+                            -- Boss kontrolü
+                            local checkCurrent = workspace
+                            local stillExists = true
+                            for _, part in ipairs(pathParts) do
+                                if checkCurrent and checkCurrent:FindFirstChild(part) then
+                                    checkCurrent = checkCurrent[part]
+                                else
+                                    stillExists = false
+                                    break
+                                end
+                            end
+
+                            if not stillExists then
+                                bossAlive = false
+                                break
+                            end
+
+                            -- Knockback koruması
+                            if Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
+                                local dist = (Player.Character.HumanoidRootPart.Position - data.pos).Magnitude
+                                if dist > 2 then
+                                    pcall(function()
+                                        Player.Character.HumanoidRootPart.CFrame = CFrame.new(data.pos)
+                                    end)
+                                    bossStatusLabel.Text = "🔄 " .. bossName .. " knockback önlendi!"
+                                end
+                            end
+                        end
+
+                        -- Boss öldü
+                        killCounters[bossName] = killCounters[bossName] + 1
+                        killLabel.Text = "💀 Kill: Sun God " .. killCounters["Sun God"] .. " | Cosmic Being " .. killCounters["Cosmic Being"]
+                        bossStatusLabel.Text = "✅ " .. bossName .. " öldü, NPC'ye dönülüyor..."
+
+                        -- Geri dön
+                        if savedNpcPos and Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
+                            Player.Character.HumanoidRootPart.CFrame = CFrame.new(savedNpcPos)
+                        end
+                        bossStatusLabel.Text = "🔍 " .. bossName .. " taranıyor..."
+                    end
+                    task.wait(1)
+                end
+            end)
+        else
+            bossStatusLabel.Text = "⏸️ " .. bossName .. " durduruldu"
+        end
+    end)
+end
+
+-- // --- SETTINGS SEKME --- //
+AddSection(SettingsTab, "Genel (Otomatik Açık)")
+local antiAFK = AddToggle(SettingsTab, "Anti AFK", "Kıpırdamadan AFK engeller", true)
+local fpsBoost = AddToggle(SettingsTab, "FPS Boost", "Gereksiz texture temizliği", true)
+local lowGraphics = AddToggle(SettingsTab, "Low Graphics", "Işık/gölge kapat, performans", true)
+
+-- Anti Knockback (Manuel CFrame Kilitleme)
+AddSection(SettingsTab, "Karakter")
+local antiKB = AddToggle(SettingsTab, "Anti Knockback", "Karakteri sabitler, knockback yemezsin", false)
+local kbSavedPos = nil
+
+antiKB:OnChanged(function(val)
+    if val then
+        if Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
+            kbSavedPos = Player.Character.HumanoidRootPart.Position
+        end
+        task.spawn(function()
+            while antiKB:GetState() do
+                if Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") and kbSavedPos then
+                    local dist = (Player.Character.HumanoidRootPart.Position - kbSavedPos).Magnitude
+                    if dist > 0.5 then
+                        pcall(function()
+                            Player.Character.HumanoidRootPart.CFrame = CFrame.new(kbSavedPos)
+                        end)
+                    end
+                else
+                    if Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
+                        kbSavedPos = Player.Character.HumanoidRootPart.Position
+                    end
+                end
+                task.wait(0.1)
+            end
+        end)
+    end
+end)
+
+-- Anti AFK döngüsü
 task.spawn(function()
     while task.wait(10) do
         if antiAFK:GetState() then
@@ -578,24 +619,30 @@ task.spawn(function()
     end
 end)
 
-AddSection(SettingsTab, "Performans")
-local fpsBoost = AddToggle(SettingsTab, "FPS Boost", "Gereksiz textureları temizler", false)
-
-fpsBoost:OnChanged(function(val)
-    if val then
-        for _, v in pairs(workspace:GetDescendants()) do
-            if v:IsA("Texture") or v:IsA("Decal") then
-                pcall(function() v:Destroy() end)
-            end
+-- FPS Boost ve Low Graphics uygula
+task.spawn(function()
+    -- FPS Boost başlangıç
+    for _, v in pairs(workspace:GetDescendants()) do
+        if v:IsA("Texture") or v:IsA("Decal") then
+            pcall(function() v:Destroy() end)
         end
-        game:GetService("Lighting").GlobalShadows = false
-        game:GetService("Lighting").FogEnd = 9e9
+    end
+    if fpsBoost:GetState() then
+        Lighting.GlobalShadows = false
+        Lighting.FogEnd = 9e9
         pcall(function() settings().Rendering.QualityLevel = 1 end)
     end
+    if lowGraphics:GetState() then
+        Lighting.GlobalShadows = false
+        Lighting.FogEnd = 9e9
+        Lighting.Brightness = 1
+        Lighting.ClockTime = 14
+        pcall(function()
+            settings().Rendering.QualityLevel = 1
+            settings().Rendering.MeshPartDetailLevel = Enum.MeshPartDetailLevel.Level03
+        end)
+    end
 end)
-
-AddSection(SettingsTab, "Optimizasyon")
-AddLabel(SettingsTab, "⚡ Ayarlar otomatik kaydedilmez")
 
 -- // Canvas Güncelle //
 for _, tab in pairs(tabs) do
@@ -610,6 +657,6 @@ Tween(Main, {Size = UDim2.new(0, 500, 0, 350)}, 0.3)
 task.wait(0.3)
 Main.Visible = false
 
-print("✅ ZwacHub v2.1 Yüklendi - Boss Timer Eklendi")
+print("✅ ZwacHub v3.5 Yüklendi - Tüm özellikler aktif")
 print("🎮 Geliştirici: Zwac | %100 Organik Kod")
-print("📍 Boss Konumu: " .. tostring(BOSS_POSITION))
+print("🖼️ Logo eklendi | ⚔️ Auto Skill | 🛡️ Anti Knockback | 👾 Çift Boss Farm")
