@@ -57,20 +57,24 @@ local function MakeDraggable(frame, handle)
     end)
 end
 
+-- Logo Butonu (Tamamen şeffaf arka plan)
 local ToggleBtn
 local logoSuccess = pcall(function()
     local btn = Instance.new("ImageButton")
-    btn.Size = UDim2.new(0, 42, 0, 42)
-    btn.BackgroundTransparency = 0.3
+    btn.Size = UDim2.new(0, 48, 0, 48)
+    btn.Position = UDim2.new(0.5, 0, 0.5, 0)
+    btn.BackgroundTransparency = 1  -- Tamamen şeffaf
+    btn.BorderSizePixel = 0
     btn.Image = LOGO_IMAGE
     btn.ScaleType = Enum.ScaleType.Fit
+    btn.BackgroundColor3 = Color3.fromRGB(255, 255, 255) -- Görünmez ama varsayılan
     btn.Parent = ScreenGui
     ToggleBtn = btn
 end)
 if not logoSuccess or not ToggleBtn then
     ToggleBtn = Instance.new("TextButton")
     ToggleBtn.Size = UDim2.new(0, 42, 0, 42)
-    ToggleBtn.BackgroundColor3 = C.Frame
+    ToggleBtn.Position = UDim2.new(0.5, 0, 0.5, 0)
     ToggleBtn.BackgroundTransparency = 0.4
     ToggleBtn.BorderSizePixel = 0
     ToggleBtn.Text = "⏣"
@@ -79,7 +83,6 @@ if not logoSuccess or not ToggleBtn then
     ToggleBtn.Font = Enum.Font.GothamBold
     ToggleBtn.Parent = ScreenGui
 end
-ToggleBtn.Position = UDim2.new(0.5, 0, 0.5, 0)
 local ToggleCorner = Instance.new("UICorner")
 ToggleCorner.CornerRadius = UDim.new(0, 8)
 ToggleCorner.Parent = ToggleBtn
@@ -599,4 +602,4 @@ Tween(Main, {Size = UDim2.new(0, 500, 0, 360)}, 0.3)
 task.wait(0.3)
 Main.Visible = false
 
-print("✅ ZwacHub v3.7 - Event Tabanlı Auto Skill")
+print("✅ ZwacHub v3.8 - Şeffaf Logo Düzenlemesi")
