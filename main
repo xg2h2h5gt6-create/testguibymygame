@@ -1,69 +1,43 @@
--- // ZwacHub v3.5 - Stabilite Yamaları //
--- // Sailor Piece için özel, %100 Organik //
-
 local Players = game:GetService("Players")
 local Player = Players.LocalPlayer
 local VirtualUser = game:GetService("VirtualUser")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local Lighting = game:GetService("Lighting")
-local RunService = game:GetService("RunService")
 
--- // SABİTLER //
 local LOGO_IMAGE = "https://raw.githubusercontent.com/xg2h2h5gt6-create/testguibymygame/refs/heads/main/F08C21D5-1752-4034-8C85-3A77779C8659.png"
 
+local BOSS_ORDER = {"Cosmic Being", "Sun God"}
 local BOSS_DATA = {
-    ["Sun God"] = {
-        path = "NPCs.SunGodBoss_Normal", -- Baştaki workspace'i kaldırdık, kontrollü ekleyeceğiz
-        pos = Vector3.new(-2498, 47, -3214)
-    },
-    ["Cosmic Being"] = {
-        path = "NPCs.CosmicBeingBoss_Normal",
-        pos = Vector3.new(-1824, 3, 1945)
-    }
+    ["Cosmic Being"] = { path = "NPCs.CosmicBeingBoss_Normal", pos = Vector3.new(-1824, 3, 1945) },
+    ["Sun God"] = { path = "NPCs.SunGodBoss_Normal", pos = Vector3.new(-2498, 47, -3214) }
 }
 
--- // Basit Boss Bulma Fonksiyonu //
 local function findBoss(path)
     local current = workspace
     for part in string.gmatch(path, "[^%.]+") do
-        if current and current:FindFirstChild(part) then
-            current = current[part]
-        else
-            return nil
-        end
+        if current and current:FindFirstChild(part) then current = current[part] else return nil end
     end
     return current
 end
 
--- // Ana GUI //
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "ZwacHub"
 ScreenGui.Parent = game:GetService("CoreGui")
+if syn and syn.protect_gui then syn.protect_gui(ScreenGui) end
 
-if syn and syn.protect_gui then
-    syn.protect_gui(ScreenGui)
-end
-
--- // Renk Paleti //
 local C = {
-    BG = Color3.fromRGB(18, 18, 20),
-    Frame = Color3.fromRGB(28, 28, 32),
-    Accent = Color3.fromRGB(220, 220, 230),
-    Text = Color3.fromRGB(240, 240, 250),
-    TextDim = Color3.fromRGB(150, 150, 160),
-    TabActive = Color3.fromRGB(220, 220, 230),
-    TabInactive = Color3.fromRGB(60, 60, 65),
-    SwitchOn = Color3.fromRGB(220, 220, 230),
+    BG = Color3.fromRGB(18, 18, 20), Frame = Color3.fromRGB(28, 28, 32),
+    Accent = Color3.fromRGB(220, 220, 230), Text = Color3.fromRGB(240, 240, 250),
+    TextDim = Color3.fromRGB(150, 150, 160), TabActive = Color3.fromRGB(220, 220, 230),
+    TabInactive = Color3.fromRGB(60, 60, 65), SwitchOn = Color3.fromRGB(220, 220, 230),
     SwitchOff = Color3.fromRGB(50, 50, 55)
 }
 
--- // Yardımcı //
 local function Tween(obj, props, dur)
     return TweenService:Create(obj, TweenInfo.new(dur or 0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), props):Play()
 end
 
--- // Sürükleme Sistemi //
 local function MakeDraggable(frame, handle)
     local drag, start, pos = false, nil, nil
     handle = handle or frame
@@ -79,13 +53,10 @@ local function MakeDraggable(frame, handle)
         end
     end)
     UserInputService.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            drag = false
-        end
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then drag = false end
     end)
 end
 
--- // Logo Butonu (ImageButton hata verirse TextButton'a döner) //
 local ToggleBtn
 local logoSuccess = pcall(function()
     local btn = Instance.new("ImageButton")
@@ -96,7 +67,6 @@ local logoSuccess = pcall(function()
     btn.Parent = ScreenGui
     ToggleBtn = btn
 end)
-
 if not logoSuccess or not ToggleBtn then
     ToggleBtn = Instance.new("TextButton")
     ToggleBtn.Size = UDim2.new(0, 42, 0, 42)
@@ -108,50 +78,40 @@ if not logoSuccess or not ToggleBtn then
     ToggleBtn.TextSize = 20
     ToggleBtn.Font = Enum.Font.GothamBold
     ToggleBtn.Parent = ScreenGui
-    print("Logo yüklenemedi, yedek simge kullanıldı.")
 end
-
 ToggleBtn.Position = UDim2.new(0.5, 0, 0.5, 0)
 local ToggleCorner = Instance.new("UICorner")
 ToggleCorner.CornerRadius = UDim.new(0, 8)
 ToggleCorner.Parent = ToggleBtn
-
 MakeDraggable(ToggleBtn)
 
--- // ANA FRAME - YATAY TASARIM //
 local Main = Instance.new("Frame")
-Main.Name = "Main"
-Main.Size = UDim2.new(0, 500, 0, 350)
-Main.Position = UDim2.new(0.5, -250, 0.5, -175)
+Main.Size = UDim2.new(0, 500, 0, 360)
+Main.Position = UDim2.new(0.5, -250, 0.5, -180)
 Main.BackgroundColor3 = C.BG
 Main.BackgroundTransparency = 0.1
 Main.BorderSizePixel = 0
 Main.Visible = false
 Main.ClipsDescendants = true
 Main.Parent = ScreenGui
-
 local MainCorner = Instance.new("UICorner")
 MainCorner.CornerRadius = UDim.new(0, 14)
 MainCorner.Parent = Main
-
 local Border = Instance.new("UIStroke")
 Border.Thickness = 1
 Border.Color = Color3.fromRGB(45, 45, 50)
 Border.Transparency = 0.6
 Border.Parent = Main
 
--- // ÜST BAR //
 local TopBar = Instance.new("Frame")
 TopBar.Size = UDim2.new(1, 0, 0, 50)
 TopBar.BackgroundColor3 = C.Frame
 TopBar.BackgroundTransparency = 0.5
 TopBar.BorderSizePixel = 0
 TopBar.Parent = Main
-
 local TopCorner = Instance.new("UICorner")
 TopCorner.CornerRadius = UDim.new(0, 14)
 TopCorner.Parent = TopBar
-
 local Logo = Instance.new("TextLabel")
 Logo.Size = UDim2.new(1, -50, 1, 0)
 Logo.Position = UDim2.new(0, 18, 0, 0)
@@ -162,7 +122,6 @@ Logo.TextSize = 15
 Logo.Font = Enum.Font.GothamBold
 Logo.TextXAlignment = Enum.TextXAlignment.Left
 Logo.Parent = TopBar
-
 local Close = Instance.new("TextButton")
 Close.Size = UDim2.new(0, 32, 0, 32)
 Close.Position = UDim2.new(1, -42, 0, 9)
@@ -174,14 +133,11 @@ Close.TextColor3 = C.Text
 Close.TextSize = 14
 Close.Font = Enum.Font.GothamBold
 Close.Parent = TopBar
-
 local CloseCorner = Instance.new("UICorner")
 CloseCorner.CornerRadius = UDim.new(0, 8)
 CloseCorner.Parent = Close
-
 MakeDraggable(Main, TopBar)
 
--- // TAB SİSTEMİ //
 local TabContainer = Instance.new("Frame")
 TabContainer.Size = UDim2.new(0, 120, 1, -50)
 TabContainer.Position = UDim2.new(0, 0, 0, 50)
@@ -189,7 +145,6 @@ TabContainer.BackgroundColor3 = C.Frame
 TabContainer.BackgroundTransparency = 0.3
 TabContainer.BorderSizePixel = 0
 TabContainer.Parent = Main
-
 local Content = Instance.new("Frame")
 Content.Size = UDim2.new(1, -120, 1, -50)
 Content.Position = UDim2.new(0, 120, 0, 50)
@@ -198,7 +153,6 @@ Content.Parent = Main
 
 local tabs = {}
 local currentTab = nil
-
 local function CreateTab(name, icon)
     local btn = Instance.new("TextButton")
     btn.Size = UDim2.new(1, -14, 0, 38)
@@ -212,7 +166,6 @@ local function CreateTab(name, icon)
     btn.Font = Enum.Font.GothamSemibold
     btn.AutoButtonColor = false
     btn.Parent = TabContainer
-
     local BtnCorner = Instance.new("UICorner")
     BtnCorner.CornerRadius = UDim.new(0, 8)
     BtnCorner.Parent = btn
@@ -227,18 +180,15 @@ local function CreateTab(name, icon)
     contentFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
     contentFrame.Visible = (#tabs == 0)
     contentFrame.Parent = Content
-
     local list = Instance.new("UIListLayout")
     list.Padding = UDim.new(0, 10)
     list.SortOrder = Enum.SortOrder.LayoutOrder
     list.Parent = contentFrame
-
     list:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
         contentFrame.CanvasSize = UDim2.new(0, 0, 0, list.AbsoluteContentSize.Y + 20)
     end)
 
     local tabData = { button = btn, content = contentFrame, list = list }
-
     btn.MouseButton1Click:Connect(function()
         if currentTab == tabData then return end
         if currentTab then
@@ -255,24 +205,16 @@ local function CreateTab(name, icon)
         task.wait(0.05)
         contentFrame.CanvasSize = UDim2.new(0, 0, 0, list.AbsoluteContentSize.Y + 20)
     end)
-
     tabs[#tabs + 1] = tabData
     if #tabs == 1 then currentTab = tabData end
-
-    return {
-        scroll = contentFrame,
-        list = list,
-        button = btn
-    }
+    return { scroll = contentFrame, list = list, button = btn }
 end
 
--- // Element Oluşturucular //
 local function AddSection(tab, title)
     local section = Instance.new("Frame")
     section.Size = UDim2.new(1, 0, 0, 26)
     section.BackgroundTransparency = 1
     section.Parent = tab.scroll
-
     local text = Instance.new("TextLabel")
     text.Size = UDim2.new(1, 0, 1, 0)
     text.BackgroundTransparency = 1
@@ -282,7 +224,6 @@ local function AddSection(tab, title)
     text.Font = Enum.Font.GothamBold
     text.TextXAlignment = Enum.TextXAlignment.Left
     text.Parent = section
-
     local line = Instance.new("Frame")
     line.Size = UDim2.new(1, 0, 0, 1)
     line.Position = UDim2.new(0, 0, 1, 0)
@@ -290,7 +231,6 @@ local function AddSection(tab, title)
     line.BackgroundTransparency = 0.8
     line.BorderSizePixel = 0
     line.Parent = section
-
     return section
 end
 
@@ -314,11 +254,9 @@ local function AddToggle(tab, title, desc, default)
     frame.BackgroundTransparency = 0.5
     frame.BorderSizePixel = 0
     frame.Parent = tab.scroll
-
     local fCorner = Instance.new("UICorner")
     fCorner.CornerRadius = UDim.new(0, 8)
     fCorner.Parent = frame
-
     local titleLbl = Instance.new("TextLabel")
     titleLbl.Size = UDim2.new(1, -60, 0, 20)
     titleLbl.Position = UDim2.new(0, 12, 0, 6)
@@ -329,7 +267,6 @@ local function AddToggle(tab, title, desc, default)
     titleLbl.Font = Enum.Font.GothamSemibold
     titleLbl.TextXAlignment = Enum.TextXAlignment.Left
     titleLbl.Parent = frame
-
     local descLbl = Instance.new("TextLabel")
     descLbl.Size = UDim2.new(1, -60, 0, 14)
     descLbl.Position = UDim2.new(0, 12, 0, 28)
@@ -340,7 +277,6 @@ local function AddToggle(tab, title, desc, default)
     descLbl.Font = Enum.Font.Gotham
     descLbl.TextXAlignment = Enum.TextXAlignment.Left
     descLbl.Parent = frame
-
     local switch = Instance.new("TextButton")
     switch.Size = UDim2.new(0, 44, 0, 24)
     switch.Position = UDim2.new(1, -56, 0, 13)
@@ -349,11 +285,9 @@ local function AddToggle(tab, title, desc, default)
     switch.Text = ""
     switch.AutoButtonColor = false
     switch.Parent = frame
-
     local sCorner = Instance.new("UICorner")
     sCorner.CornerRadius = UDim.new(1, 0)
     sCorner.Parent = switch
-
     local knob = Instance.new("Frame")
     knob.Size = UDim2.new(0, 18, 0, 18)
     knob.Position = default and UDim2.new(1, -21, 0.5, -9) or UDim2.new(0, 3, 0.5, -9)
@@ -361,21 +295,16 @@ local function AddToggle(tab, title, desc, default)
     knob.BackgroundTransparency = 0.1
     knob.BorderSizePixel = 0
     knob.Parent = switch
-
     local kCorner = Instance.new("UICorner")
     kCorner.CornerRadius = UDim.new(1, 0)
     kCorner.Parent = knob
 
     local toggled = default or false
     local callbacks = {}
-
     local function fire(val)
         toggled = val
-        for _, cb in ipairs(callbacks) do
-            task.spawn(function() cb(val) end)
-        end
+        for _, cb in ipairs(callbacks) do task.spawn(function() cb(val) end) end
     end
-
     switch.MouseButton1Click:Connect(function()
         toggled = not toggled
         if toggled then
@@ -387,15 +316,9 @@ local function AddToggle(tab, title, desc, default)
         end
         fire(toggled)
     end)
-
     return {
-        OnChanged = function(self, cb)
-            callbacks[#callbacks + 1] = cb
-            return self
-        end,
-        GetState = function()
-            return toggled
-        end,
+        OnChanged = function(self, cb) callbacks[#callbacks + 1] = cb; return self end,
+        GetState = function() return toggled end,
         SetState = function(val)
             toggled = val
             switch.BackgroundColor3 = val and C.SwitchOn or C.SwitchOff
@@ -415,32 +338,22 @@ local function AddButton(tab, title, callback)
     btn.TextSize = 13
     btn.Font = Enum.Font.GothamSemibold
     btn.Parent = tab.scroll
-
     local btnCorner = Instance.new("UICorner")
     btnCorner.CornerRadius = UDim.new(0, 8)
     btnCorner.Parent = btn
-
     btn.MouseButton1Click:Connect(callback)
     return btn
 end
 
--- // GUI AÇ/KAPAT //
-ToggleBtn.MouseButton1Click:Connect(function()
-    Main.Visible = not Main.Visible
-end)
+ToggleBtn.MouseButton1Click:Connect(function() Main.Visible = not Main.Visible end)
+Close.MouseButton1Click:Connect(function() Main.Visible = false end)
 
-Close.MouseButton1Click:Connect(function()
-    Main.Visible = false
-end)
-
--- // ==================== SEKMELER ==================== //
 local GameTab = CreateTab("Game", "🎮")
 local SettingsTab = CreateTab("Settings", "⚙️")
 
--- // --- GAME SEKME - DUNGEON --- //
+-- DUNGEON
 AddSection(GameTab, "Dungeon Otomasyonu")
-local autoReplay = AddToggle(GameTab, "Auto Replay", "Her 10 saniyede bir Replay eventini atar", false)
-
+local autoReplay = AddToggle(GameTab, "Auto Replay", "10sn'de bir Replay eventi atar", false)
 autoReplay:OnChanged(function(val)
     if val then
         task.spawn(function()
@@ -455,75 +368,138 @@ autoReplay:OnChanged(function(val)
     end
 end)
 
--- // --- GAME SEKME - AUTO SKILL (Alternatif Sistem) --- //
+-- AUTO SKILL (Seçmeli)
 AddSection(GameTab, "Auto Skill")
-local autoSkill = AddToggle(GameTab, "Auto Skill", "Z-X-C-V-F tuşlarını sırayla otomatik atar", false)
-local skillLabel = AddLabel(GameTab, "⏸️ Auto Skill pasif")
+local skillKeys = {
+    { name = "Z", key = Enum.KeyCode.Z },
+    { name = "X", key = Enum.KeyCode.X },
+    { name = "C", key = Enum.KeyCode.C },
+    { name = "V", key = Enum.KeyCode.V },
+    { name = "F", key = Enum.KeyCode.F }
+}
+local skillToggles = {}
+local skillActive = false
+local skillLabel = AddLabel(GameTab, "⏸️ Skill pasif")
 
-autoSkill:OnChanged(function(val)
+local masterSkillToggle = AddToggle(GameTab, "Auto Skill", "Seçili tuşları sırayla atar", false)
+masterSkillToggle:OnChanged(function(val)
+    skillActive = val
     if val then
-        skillLabel.Text = "⚔️ Auto Skill aktif - Z-X-C-V-F"
+        skillLabel.Text = "⚔️ Skill aktif"
         task.spawn(function()
-            while autoSkill:GetState() do
-                local keys = {Enum.KeyCode.Z, Enum.KeyCode.X, Enum.KeyCode.C, Enum.KeyCode.V, Enum.KeyCode.F}
-                for _, key in ipairs(keys) do
-                    if not autoSkill:GetState() then break end
-                    pcall(function()
-                        -- VirtualInputService dene, hata verirse keypress kullan
-                        local success = pcall(function()
-                            if VirtualInputService then
-                                VirtualInputService:SendKeyEvent(true, key, false, game)
-                                task.wait(0.05)
-                                VirtualInputService:SendKeyEvent(false, key, false, game)
-                            end
-                        end)
-                        if not success then
-                            keypress(key.KeyCode)
-                            task.wait(0.05)
-                            keyrelease(key.KeyCode)
-                        end
-                    end)
-                    task.wait(0.3)
+            while skillActive do
+                for _, data in ipairs(skillKeys) do
+                    if not skillActive then break end
+                    if skillToggles[data.name] and skillToggles[data.name]:GetState() then
+                        pcall(function() keypress(data.key.KeyCode) end)
+                        task.wait(0.05)
+                        pcall(function() keyrelease(data.key.KeyCode) end)
+                        task.wait(0.3)
+                    end
                 end
+                task.wait(0.1)
             end
         end)
     else
-        skillLabel.Text = "⏸️ Auto Skill pasif"
+        skillLabel.Text = "⏸️ Skill pasif"
     end
 end)
 
--- // --- GAME SEKME - BOSS FARM --- //
+for _, data in ipairs(skillKeys) do
+    local toggle = AddToggle(GameTab, "Skill " .. data.name, data.name .. " tuşuna bas", false)
+    skillToggles[data.name] = toggle
+end
+
+-- BOSS FARM (Sıralı)
 AddSection(GameTab, "Boss Farm")
-AddLabel(GameTab, "📍 NPC Konumu: Kaydedilmedi")
-
-local npcPosLabel = AddLabel(GameTab, "NPC: Yok")
-npcPosLabel.Size = UDim2.new(1, 0, 0, 20)
-
+local npcPosLabel = AddLabel(GameTab, "NPC: Kaydedilmedi")
 local savedNpcPos = nil
 
-AddButton(GameTab, "💾 NPC Konumunu Kaydet", function()
+AddButton(GameTab, "NPC Konumu Kaydet", function()
     if Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
         savedNpcPos = Player.Character.HumanoidRootPart.Position
-        npcPosLabel.Text = "📍 NPC: " .. math.floor(savedNpcPos.X) .. ", " .. math.floor(savedNpcPos.Y) .. ", " .. math.floor(savedNpcPos.Z)
+        npcPosLabel.Text = "NPC: " .. math.floor(savedNpcPos.X) .. ", " .. math.floor(savedNpcPos.Y) .. ", " .. math.floor(savedNpcPos.Z)
     end
 end)
 
-local bossToggles = {}
 local bossStatusLabel = AddLabel(GameTab, "⏳ Boss bekleniyor...")
-bossStatusLabel.Size = UDim2.new(1, 0, 0, 20)
+local killCounters = { ["Cosmic Being"] = 0, ["Sun God"] = 0 }
+local killLabel = AddLabel(GameTab, "Kill: Cosmic 0 | Sun 0")
 
-local killCounters = {
-    ["Sun God"] = 0,
-    ["Cosmic Being"] = 0
-}
-local killLabel = AddLabel(GameTab, "💀 Kill: Sun God 0 | Cosmic Being 0")
-killLabel.Size = UDim2.new(1, 0, 0, 20)
+local bossToggles = {}
+local farmActive = false
+local farmThread = nil
 
--- Boss Toggle'larını oluştur
-for bossName, data in pairs(BOSS_DATA) do
-    local toggle = AddToggle(GameTab, bossName, "Otomatik " .. bossName .. " keser", false)
+local function bossFightLoop()
+    while farmActive do
+        local anyActive = false
+        for _, name in ipairs(BOSS_ORDER) do
+            if bossToggles[name] and bossToggles[name]:GetState() then
+                anyActive = true
+            end
+        end
+        if not anyActive then
+            bossStatusLabel.Text = "⏳ Hiç boss seçili değil"
+            task.wait(1)
+            continue
+        end
+
+        for _, bossName in ipairs(BOSS_ORDER) do
+            if not farmActive then break end
+            if bossToggles[bossName] and bossToggles[bossName]:GetState() then
+                local data = BOSS_DATA[bossName]
+                bossStatusLabel.Text = "🔍 " .. bossName .. " taranıyor..."
+                
+                local bossModel = nil
+                local waited = 0
+                while not bossModel and farmActive and waited < 30 do
+                    bossModel = findBoss(data.path)
+                    if not bossModel then
+                        task.wait(1)
+                        waited = waited + 1
+                    end
+                end
+
+                if bossModel and farmActive then
+                    bossStatusLabel.Text = "⚔️ " .. bossName .. " kesiliyor..."
+                    if Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
+                        Player.Character.HumanoidRootPart.CFrame = CFrame.new(data.pos)
+                    end
+
+                    while findBoss(data.path) and farmActive do
+                        task.wait(0.2)
+                        if Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
+                            local dist = (Player.Character.HumanoidRootPart.Position - data.pos).Magnitude
+                            if dist > 3 then
+                                pcall(function() Player.Character.HumanoidRootPart.CFrame = CFrame.new(data.pos) end)
+                            end
+                        end
+                    end
+
+                    if farmActive then
+                        killCounters[bossName] = killCounters[bossName] + 1
+                        killLabel.Text = "Kill: Cosmic " .. killCounters["Cosmic Being"] .. " | Sun " .. killCounters["Sun God"]
+                        bossStatusLabel.Text = "✅ " .. bossName .. " öldü"
+                        task.wait(1)
+                    end
+                end
+            end
+        end
+
+        if farmActive and savedNpcPos and Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
+            bossStatusLabel.Text = "↩️ NPC'ye dönülüyor..."
+            Player.Character.HumanoidRootPart.CFrame = CFrame.new(savedNpcPos)
+            task.wait(1)
+        end
+        task.wait(1)
+    end
+end
+
+for _, bossName in ipairs(BOSS_ORDER) do
+    local data = BOSS_DATA[bossName]
+    local toggle = AddToggle(GameTab, bossName, "Sıralı keser", false)
     bossToggles[bossName] = toggle
-
+    
     toggle:OnChanged(function(val)
         if val then
             if not savedNpcPos then
@@ -531,62 +507,35 @@ for bossName, data in pairs(BOSS_DATA) do
                 bossStatusLabel.Text = "❌ Önce NPC konumu kaydet!"
                 return
             end
-            bossStatusLabel.Text = "🔍 " .. bossName .. " taranıyor..."
-            task.spawn(function()
-                while toggle:GetState() do
-                    local bossModel = findBoss(data.path)
-                    if bossModel then
-                        bossStatusLabel.Text = "⚔️ " .. bossName .. " bulundu, saldırılıyor!"
-                        if Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
-                            Player.Character.HumanoidRootPart.CFrame = CFrame.new(data.pos)
-                        end
-
-                        local bossAlive = true
-                        while bossAlive and toggle:GetState() do
-                            task.wait(0.2)
-                            if not findBoss(data.path) then
-                                bossAlive = false
-                                break
-                            end
-                            if Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
-                                local dist = (Player.Character.HumanoidRootPart.Position - data.pos).Magnitude
-                                if dist > 2 then
-                                    pcall(function()
-                                        Player.Character.HumanoidRootPart.CFrame = CFrame.new(data.pos)
-                                    end)
-                                    bossStatusLabel.Text = "🔄 " .. bossName .. " knockback önlendi!"
-                                end
-                            end
-                        end
-
-                        killCounters[bossName] = killCounters[bossName] + 1
-                        killLabel.Text = "💀 Kill: Sun God " .. killCounters["Sun God"] .. " | Cosmic Being " .. killCounters["Cosmic Being"]
-                        bossStatusLabel.Text = "✅ " .. bossName .. " öldü, NPC'ye dönülüyor..."
-
-                        if savedNpcPos and Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
-                            Player.Character.HumanoidRootPart.CFrame = CFrame.new(savedNpcPos)
-                        end
-                        bossStatusLabel.Text = "🔍 " .. bossName .. " taranıyor..."
-                    end
-                    task.wait(1)
-                end
-            end)
+            if not farmActive then
+                farmActive = true
+                farmThread = task.spawn(bossFightLoop)
+            end
         else
-            bossStatusLabel.Text = "⏸️ " .. bossName .. " durduruldu"
+            local anyStillActive = false
+            for _, name in ipairs(BOSS_ORDER) do
+                if bossToggles[name] and bossToggles[name]:GetState() then
+                    anyStillActive = true
+                    break
+                end
+            end
+            if not anyStillActive then
+                farmActive = false
+                bossStatusLabel.Text = "⏸️ Durduruldu"
+            end
         end
     end)
 end
 
--- // --- SETTINGS SEKME --- //
+-- SETTINGS
 AddSection(SettingsTab, "Genel (Otomatik Açık)")
-local antiAFK = AddToggle(SettingsTab, "Anti AFK", "Kıpırdamadan AFK engeller", true)
-local fpsBoost = AddToggle(SettingsTab, "FPS Boost", "Gereksiz texture temizliği", true)
-local lowGraphics = AddToggle(SettingsTab, "Low Graphics", "Işık/gölge kapat, performans", true)
+local antiAFK = AddToggle(SettingsTab, "Anti AFK", "Karakteri kıpırdatmaz", true)
+local fpsBoost = AddToggle(SettingsTab, "FPS Boost", "Texture temizler", true)
+local lowGraphics = AddToggle(SettingsTab, "Low Graphics", "Işık/gölge kapat", true)
 
 AddSection(SettingsTab, "Karakter")
-local antiKB = AddToggle(SettingsTab, "Anti Knockback", "Karakteri sabitler, knockback yemezsin", false)
+local antiKB = AddToggle(SettingsTab, "Anti Knockback", "Sabitler", false)
 local kbSavedPos = nil
-
 antiKB:OnChanged(function(val)
     if val then
         if Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
@@ -597,14 +546,10 @@ antiKB:OnChanged(function(val)
                 if Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") and kbSavedPos then
                     local dist = (Player.Character.HumanoidRootPart.Position - kbSavedPos).Magnitude
                     if dist > 0.5 then
-                        pcall(function()
-                            Player.Character.HumanoidRootPart.CFrame = CFrame.new(kbSavedPos)
-                        end)
+                        pcall(function() Player.Character.HumanoidRootPart.CFrame = CFrame.new(kbSavedPos) end)
                     end
-                else
-                    if Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
-                        kbSavedPos = Player.Character.HumanoidRootPart.Position
-                    end
+                elseif Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
+                    kbSavedPos = Player.Character.HumanoidRootPart.Position
                 end
                 task.wait(0.1)
             end
@@ -612,24 +557,17 @@ antiKB:OnChanged(function(val)
     end
 end)
 
--- Anti AFK döngüsü
 task.spawn(function()
     while task.wait(10) do
         if antiAFK:GetState() then
-            pcall(function()
-                VirtualUser:CaptureController()
-                VirtualUser:ClickButton2(Vector2.new())
-            end)
+            pcall(function() VirtualUser:CaptureController(); VirtualUser:ClickButton2(Vector2.new()) end)
         end
     end
 end)
 
--- FPS Boost ve Low Graphics uygula
 task.spawn(function()
     for _, v in pairs(workspace:GetDescendants()) do
-        if v:IsA("Texture") or v:IsA("Decal") then
-            pcall(function() v:Destroy() end)
-        end
+        if v:IsA("Texture") or v:IsA("Decal") then pcall(function() v:Destroy() end) end
     end
     if fpsBoost:GetState() then
         Lighting.GlobalShadows = false
@@ -648,18 +586,15 @@ task.spawn(function()
     end
 end)
 
--- // Canvas Güncelle //
 for _, tab in pairs(tabs) do
     task.wait(0.05)
     tab.content.CanvasSize = UDim2.new(0, 0, 0, tab.list.AbsoluteContentSize.Y + 20)
 end
 
--- // Açılış Animasyonu //
 Main.Size = UDim2.new(0, 500, 0, 0)
 Main.Visible = true
-Tween(Main, {Size = UDim2.new(0, 500, 0, 350)}, 0.3)
+Tween(Main, {Size = UDim2.new(0, 500, 0, 360)}, 0.3)
 task.wait(0.3)
 Main.Visible = false
 
-print("✅ ZwacHub v3.5 Stabil - Tüm özellikler aktif")
-print("🎮 Geliştirici: Zwac | %100 Organik Kod")
+print("✅ ZwacHub v3.6 - Sıralı Boss + Seçmeli Skill")
