@@ -5,8 +5,6 @@ local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local Lighting = game:GetService("Lighting")
 
-local LOGO_IMAGE = "https://raw.githubusercontent.com/xg2h2h5gt6-create/testguibymygame/refs/heads/main/F08C21D5-1752-4034-8C85-3A77779C8659.png"
-
 local BOSS_ORDER = {"Cosmic Being", "Sun God"}
 local BOSS_DATA = {
     ["Cosmic Being"] = { path = "NPCs.CosmicBeingBoss_Normal", pos = Vector3.new(-1824, 3, 1945) },
@@ -57,29 +55,19 @@ local function MakeDraggable(frame, handle)
     end)
 end
 
-local ToggleBtn
-local logoSuccess = pcall(function()
-    local btn = Instance.new("ImageButton")
-    btn.Size = UDim2.new(0, 42, 0, 42)
-    btn.BackgroundTransparency = 0.3
-    btn.Image = LOGO_IMAGE
-    btn.ScaleType = Enum.ScaleType.Fit
-    btn.Parent = ScreenGui
-    ToggleBtn = btn
-end)
-if not logoSuccess or not ToggleBtn then
-    ToggleBtn = Instance.new("TextButton")
-    ToggleBtn.Size = UDim2.new(0, 42, 0, 42)
-    ToggleBtn.BackgroundColor3 = C.Frame
-    ToggleBtn.BackgroundTransparency = 0.4
-    ToggleBtn.BorderSizePixel = 0
-    ToggleBtn.Text = "⏣"
-    ToggleBtn.TextColor3 = C.Accent
-    ToggleBtn.TextSize = 20
-    ToggleBtn.Font = Enum.Font.GothamBold
-    ToggleBtn.Parent = ScreenGui
-end
+-- Düz metin buton (garanti çalışır)
+local ToggleBtn = Instance.new("TextButton")
+ToggleBtn.Size = UDim2.new(0, 42, 0, 42)
 ToggleBtn.Position = UDim2.new(0.5, 0, 0.5, 0)
+ToggleBtn.BackgroundColor3 = C.Frame
+ToggleBtn.BackgroundTransparency = 0.4
+ToggleBtn.BorderSizePixel = 0
+ToggleBtn.Text = "⏣"
+ToggleBtn.TextColor3 = C.Accent
+ToggleBtn.TextSize = 20
+ToggleBtn.Font = Enum.Font.GothamBold
+ToggleBtn.Parent = ScreenGui
+
 local ToggleCorner = Instance.new("UICorner")
 ToggleCorner.CornerRadius = UDim.new(0, 8)
 ToggleCorner.Parent = ToggleBtn
@@ -368,7 +356,7 @@ autoReplay:OnChanged(function(val)
     end
 end)
 
--- AUTO SKILL (RemoteEvent ile)
+-- AUTO SKILL
 AddSection(GameTab, "Auto Skill")
 local skillMap = {
     { name = "Z", id = 1 },
@@ -411,7 +399,7 @@ for _, data in ipairs(skillMap) do
     skillToggles[data.name] = toggle
 end
 
--- BOSS FARM (Sıralı)
+-- BOSS FARM
 AddSection(GameTab, "Boss Farm")
 local npcPosLabel = AddLabel(GameTab, "NPC: Kaydedilmedi")
 local savedNpcPos = nil
@@ -429,7 +417,6 @@ local killLabel = AddLabel(GameTab, "Kill: Cosmic 0 | Sun 0")
 
 local bossToggles = {}
 local farmActive = false
-local farmThread = nil
 
 local function bossFightLoop()
     while farmActive do
@@ -498,7 +485,6 @@ local function bossFightLoop()
 end
 
 for _, bossName in ipairs(BOSS_ORDER) do
-    local data = BOSS_DATA[bossName]
     local toggle = AddToggle(GameTab, bossName, "Sıralı keser", false)
     bossToggles[bossName] = toggle
     
@@ -511,7 +497,7 @@ for _, bossName in ipairs(BOSS_ORDER) do
             end
             if not farmActive then
                 farmActive = true
-                farmThread = task.spawn(bossFightLoop)
+                task.spawn(bossFightLoop)
             end
         else
             local anyStillActive = false
@@ -599,4 +585,4 @@ Tween(Main, {Size = UDim2.new(0, 500, 0, 360)}, 0.3)
 task.wait(0.3)
 Main.Visible = false
 
-print("✅ ZwacHub v3.7 - Event Tabanlı Auto Skill")
+print("✅ ZwacHub v3.9 - Kararlı Sürüm")
