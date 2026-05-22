@@ -1,5 +1,4 @@
--- // ZwacHub - Pet Simulator X Edition //
--- // %100 Organik Kod - Temel İskelet //
+-- // ZwacHub - Pet Simulator X Edition - Fix //
 
 local Players = game:GetService("Players")
 local Player = Players.LocalPlayer
@@ -7,17 +6,6 @@ local VirtualUser = game:GetService("VirtualUser")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local Lighting = game:GetService("Lighting")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-
--- // Oyun Kontrolü //
-local function isPetSimX()
-    return game.PlaceId == 6284583030  -- Pet Simulator X Place ID
-end
-
-if not isPetSimX() then
-    warn("⚠️ Bu script sadece Pet Simulator X için çalışır!")
-    return
-end
 
 -- // Ana GUI //
 local ScreenGui = Instance.new("ScreenGui")
@@ -38,7 +26,7 @@ local C = {
     SwitchOff = Color3.fromRGB(50, 50, 55)
 }
 
--- // Yardımcı Fonksiyonlar //
+-- // Yardımcı //
 local function Tween(obj, props, dur)
     return TweenService:Create(obj, TweenInfo.new(dur or 0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), props):Play()
 end
@@ -94,7 +82,6 @@ Main.Parent = ScreenGui
 local MainCorner = Instance.new("UICorner")
 MainCorner.CornerRadius = UDim.new(0, 14)
 MainCorner.Parent = Main
-
 local Border = Instance.new("UIStroke")
 Border.Thickness = 1
 Border.Color = Color3.fromRGB(45, 45, 50)
@@ -108,11 +95,9 @@ TopBar.BackgroundColor3 = C.Frame
 TopBar.BackgroundTransparency = 0.5
 TopBar.BorderSizePixel = 0
 TopBar.Parent = Main
-
 local TopCorner = Instance.new("UICorner")
 TopCorner.CornerRadius = UDim.new(0, 14)
 TopCorner.Parent = TopBar
-
 local TitleLabel = Instance.new("TextLabel")
 TitleLabel.Size = UDim2.new(1, -50, 1, 0)
 TitleLabel.Position = UDim2.new(0, 18, 0, 0)
@@ -123,7 +108,6 @@ TitleLabel.TextSize = 15
 TitleLabel.Font = Enum.Font.GothamBold
 TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
 TitleLabel.Parent = TopBar
-
 local Close = Instance.new("TextButton")
 Close.Size = UDim2.new(0, 32, 0, 32)
 Close.Position = UDim2.new(1, -42, 0, 9)
@@ -135,7 +119,6 @@ Close.TextColor3 = C.Text
 Close.TextSize = 14
 Close.Font = Enum.Font.GothamBold
 Close.Parent = TopBar
-
 local CloseCorner = Instance.new("UICorner")
 CloseCorner.CornerRadius = UDim.new(0, 8)
 CloseCorner.Parent = Close
@@ -149,7 +132,6 @@ TabContainer.BackgroundColor3 = C.Frame
 TabContainer.BackgroundTransparency = 0.3
 TabContainer.BorderSizePixel = 0
 TabContainer.Parent = Main
-
 local Content = Instance.new("Frame")
 Content.Size = UDim2.new(1, -120, 1, -50)
 Content.Position = UDim2.new(0, 120, 0, 50)
@@ -158,7 +140,6 @@ Content.Parent = Main
 
 local tabs = {}
 local currentTab = nil
-
 local function CreateTab(name, icon)
     local btn = Instance.new("TextButton")
     btn.Size = UDim2.new(1, -14, 0, 38)
@@ -172,7 +153,6 @@ local function CreateTab(name, icon)
     btn.Font = Enum.Font.GothamSemibold
     btn.AutoButtonColor = false
     btn.Parent = TabContainer
-
     local BtnCorner = Instance.new("UICorner")
     BtnCorner.CornerRadius = UDim.new(0, 8)
     BtnCorner.Parent = btn
@@ -187,12 +167,10 @@ local function CreateTab(name, icon)
     contentFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
     contentFrame.Visible = (#tabs == 0)
     contentFrame.Parent = Content
-
     local list = Instance.new("UIListLayout")
     list.Padding = UDim.new(0, 10)
     list.SortOrder = Enum.SortOrder.LayoutOrder
     list.Parent = contentFrame
-
     list:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
         contentFrame.CanvasSize = UDim2.new(0, 0, 0, list.AbsoluteContentSize.Y + 20)
     end)
@@ -214,19 +192,16 @@ local function CreateTab(name, icon)
         task.wait(0.05)
         contentFrame.CanvasSize = UDim2.new(0, 0, 0, list.AbsoluteContentSize.Y + 20)
     end)
-
     tabs[#tabs + 1] = tabData
     if #tabs == 1 then currentTab = tabData end
     return { scroll = contentFrame, list = list, button = btn }
 end
 
--- // Element Oluşturucular //
 local function AddSection(tab, title)
     local section = Instance.new("Frame")
     section.Size = UDim2.new(1, 0, 0, 26)
     section.BackgroundTransparency = 1
     section.Parent = tab.scroll
-
     local text = Instance.new("TextLabel")
     text.Size = UDim2.new(1, 0, 1, 0)
     text.BackgroundTransparency = 1
@@ -236,7 +211,6 @@ local function AddSection(tab, title)
     text.Font = Enum.Font.GothamBold
     text.TextXAlignment = Enum.TextXAlignment.Left
     text.Parent = section
-
     local line = Instance.new("Frame")
     line.Size = UDim2.new(1, 0, 0, 1)
     line.Position = UDim2.new(0, 0, 1, 0)
@@ -244,7 +218,6 @@ local function AddSection(tab, title)
     line.BackgroundTransparency = 0.8
     line.BorderSizePixel = 0
     line.Parent = section
-
     return section
 end
 
@@ -268,11 +241,9 @@ local function AddToggle(tab, title, desc, default)
     frame.BackgroundTransparency = 0.5
     frame.BorderSizePixel = 0
     frame.Parent = tab.scroll
-
     local fCorner = Instance.new("UICorner")
     fCorner.CornerRadius = UDim.new(0, 8)
     fCorner.Parent = frame
-
     local titleLbl = Instance.new("TextLabel")
     titleLbl.Size = UDim2.new(1, -60, 0, 20)
     titleLbl.Position = UDim2.new(0, 12, 0, 6)
@@ -283,7 +254,6 @@ local function AddToggle(tab, title, desc, default)
     titleLbl.Font = Enum.Font.GothamSemibold
     titleLbl.TextXAlignment = Enum.TextXAlignment.Left
     titleLbl.Parent = frame
-
     local descLbl = Instance.new("TextLabel")
     descLbl.Size = UDim2.new(1, -60, 0, 14)
     descLbl.Position = UDim2.new(0, 12, 0, 28)
@@ -294,7 +264,6 @@ local function AddToggle(tab, title, desc, default)
     descLbl.Font = Enum.Font.Gotham
     descLbl.TextXAlignment = Enum.TextXAlignment.Left
     descLbl.Parent = frame
-
     local switch = Instance.new("TextButton")
     switch.Size = UDim2.new(0, 44, 0, 24)
     switch.Position = UDim2.new(1, -56, 0, 13)
@@ -303,11 +272,9 @@ local function AddToggle(tab, title, desc, default)
     switch.Text = ""
     switch.AutoButtonColor = false
     switch.Parent = frame
-
     local sCorner = Instance.new("UICorner")
     sCorner.CornerRadius = UDim.new(1, 0)
     sCorner.Parent = switch
-
     local knob = Instance.new("Frame")
     knob.Size = UDim2.new(0, 18, 0, 18)
     knob.Position = default and UDim2.new(1, -21, 0.5, -9) or UDim2.new(0, 3, 0.5, -9)
@@ -315,21 +282,16 @@ local function AddToggle(tab, title, desc, default)
     knob.BackgroundTransparency = 0.1
     knob.BorderSizePixel = 0
     knob.Parent = switch
-
     local kCorner = Instance.new("UICorner")
     kCorner.CornerRadius = UDim.new(1, 0)
     kCorner.Parent = knob
 
     local toggled = default or false
     local callbacks = {}
-
     local function fire(val)
         toggled = val
-        for _, cb in ipairs(callbacks) do
-            task.spawn(function() cb(val) end)
-        end
+        for _, cb in ipairs(callbacks) do task.spawn(function() cb(val) end) end
     end
-
     switch.MouseButton1Click:Connect(function()
         toggled = not toggled
         if toggled then
@@ -341,7 +303,6 @@ local function AddToggle(tab, title, desc, default)
         end
         fire(toggled)
     end)
-
     return {
         OnChanged = function(self, cb) callbacks[#callbacks + 1] = cb; return self end,
         GetState = function() return toggled end,
@@ -364,32 +325,23 @@ local function AddButton(tab, title, callback)
     btn.TextSize = 13
     btn.Font = Enum.Font.GothamSemibold
     btn.Parent = tab.scroll
-
     local btnCorner = Instance.new("UICorner")
     btnCorner.CornerRadius = UDim.new(0, 8)
     btnCorner.Parent = btn
-
     btn.MouseButton1Click:Connect(callback)
     return btn
 end
 
--- // GUI Aç/Kapat //
-ToggleBtn.MouseButton1Click:Connect(function()
-    Main.Visible = not Main.Visible
-end)
+ToggleBtn.MouseButton1Click:Connect(function() Main.Visible = not Main.Visible end)
+Close.MouseButton1Click:Connect(function() Main.Visible = false end)
 
-Close.MouseButton1Click:Connect(function()
-    Main.Visible = false
-end)
-
--- // ==================== SEKMELER ==================== //
+-- // Sekmeler //
 local GameTab = CreateTab("Game", "🎮")
 local SettingsTab = CreateTab("Settings", "⚙️")
 
--- // --- GAME SEKME (Boş - Eventler buraya eklenecek) --- //
-AddSection(GameTab, "Pet Sim X Özellikleri")
+-- // --- GAME SEKME (Boş) --- //
+AddSection(GameTab, "Pet Sim X")
 AddLabel(GameTab, "⚡ Eventler hazırlanıyor...")
-AddLabel(GameTab, "📋 RemoteSpy ile eventleri topla")
 
 -- // --- SETTINGS SEKME --- //
 AddSection(SettingsTab, "Genel (Otomatik Açık)")
@@ -400,7 +352,6 @@ local lowGraphics = AddToggle(SettingsTab, "Low Graphics", "Işık/gölge kapat"
 AddSection(SettingsTab, "Karakter")
 local antiKB = AddToggle(SettingsTab, "Anti Knockback", "CFrame kilitleme", false)
 local kbSavedPos = nil
-
 antiKB:OnChanged(function(val)
     if val then
         if Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
@@ -411,9 +362,7 @@ antiKB:OnChanged(function(val)
                 if Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") and kbSavedPos then
                     local dist = (Player.Character.HumanoidRootPart.Position - kbSavedPos).Magnitude
                     if dist > 0.5 then
-                        pcall(function()
-                            Player.Character.HumanoidRootPart.CFrame = CFrame.new(kbSavedPos)
-                        end)
+                        pcall(function() Player.Character.HumanoidRootPart.CFrame = CFrame.new(kbSavedPos) end)
                     end
                 elseif Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
                     kbSavedPos = Player.Character.HumanoidRootPart.Position
@@ -428,10 +377,7 @@ end)
 task.spawn(function()
     while task.wait(10) do
         if antiAFK:GetState() then
-            pcall(function()
-                VirtualUser:CaptureController()
-                VirtualUser:ClickButton2(Vector2.new())
-            end)
+            pcall(function() VirtualUser:CaptureController(); VirtualUser:ClickButton2(Vector2.new()) end)
         end
     end
 end)
@@ -439,9 +385,7 @@ end)
 -- // FPS Boost & Low Graphics //
 task.spawn(function()
     for _, v in pairs(workspace:GetDescendants()) do
-        if v:IsA("Texture") or v:IsA("Decal") then
-            pcall(function() v:Destroy() end)
-        end
+        if v:IsA("Texture") or v:IsA("Decal") then pcall(function() v:Destroy() end) end
     end
     if fpsBoost:GetState() then
         Lighting.GlobalShadows = false
@@ -466,12 +410,11 @@ for _, tab in pairs(tabs) do
     tab.content.CanvasSize = UDim2.new(0, 0, 0, tab.list.AbsoluteContentSize.Y + 20)
 end
 
--- // Açılış Animasyonu //
+-- // Açılış //
 Main.Size = UDim2.new(0, 500, 0, 0)
 Main.Visible = true
 Tween(Main, {Size = UDim2.new(0, 500, 0, 360)}, 0.3)
 task.wait(0.3)
 Main.Visible = false
 
-print("✅ ZwacHub Pet Sim X Edition - Temel İskelet Yüklendi")
-print("🎮 Hazır - Eventler bekleniyor")
+print("✅ ZwacHub Pet Sim X - Fix Yüklendi")
