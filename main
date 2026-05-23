@@ -1,4 +1,4 @@
--- // ZwacHub - Pet Simulator X Edition - Fix //
+-- // ZwacHub - Pet Simulator X Edition - Infinite Jump Eklendi //
 
 local Players = game:GetService("Players")
 local Player = Players.LocalPlayer
@@ -6,6 +6,7 @@ local VirtualUser = game:GetService("VirtualUser")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local Lighting = game:GetService("Lighting")
+local RunService = game:GetService("RunService")
 
 -- // Ana GUI //
 local ScreenGui = Instance.new("ScreenGui")
@@ -13,7 +14,6 @@ ScreenGui.Name = "ZwacHub"
 ScreenGui.Parent = game:GetService("CoreGui")
 if syn and syn.protect_gui then syn.protect_gui(ScreenGui) end
 
--- // Renk Paleti //
 local C = {
     BG = Color3.fromRGB(18, 18, 20),
     Frame = Color3.fromRGB(28, 28, 32),
@@ -26,7 +26,6 @@ local C = {
     SwitchOff = Color3.fromRGB(50, 50, 55)
 }
 
--- // Yardımcı //
 local function Tween(obj, props, dur)
     return TweenService:Create(obj, TweenInfo.new(dur or 0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), props):Play()
 end
@@ -62,7 +61,6 @@ ToggleBtn.TextColor3 = C.Accent
 ToggleBtn.TextSize = 20
 ToggleBtn.Font = Enum.Font.GothamBold
 ToggleBtn.Parent = ScreenGui
-
 local ToggleCorner = Instance.new("UICorner")
 ToggleCorner.CornerRadius = UDim.new(0, 8)
 ToggleCorner.Parent = ToggleBtn
@@ -70,15 +68,14 @@ MakeDraggable(ToggleBtn)
 
 -- // Ana Frame //
 local Main = Instance.new("Frame")
-Main.Size = UDim2.new(0, 500, 0, 360)
-Main.Position = UDim2.new(0.5, -250, 0.5, -180)
+Main.Size = UDim2.new(0, 500, 0, 420)
+Main.Position = UDim2.new(0.5, -250, 0.5, -210)
 Main.BackgroundColor3 = C.BG
 Main.BackgroundTransparency = 0.1
 Main.BorderSizePixel = 0
 Main.Visible = false
 Main.ClipsDescendants = true
 Main.Parent = ScreenGui
-
 local MainCorner = Instance.new("UICorner")
 MainCorner.CornerRadius = UDim.new(0, 14)
 MainCorner.Parent = Main
@@ -337,11 +334,134 @@ Close.MouseButton1Click:Connect(function() Main.Visible = false end)
 
 -- // Sekmeler //
 local GameTab = CreateTab("Game", "🎮")
+local PathTab = CreateTab("Path", "📍")
 local SettingsTab = CreateTab("Settings", "⚙️")
 
--- // --- GAME SEKME (Boş) --- //
-AddSection(GameTab, "Pet Sim X")
-AddLabel(GameTab, "⚡ Eventler hazırlanıyor...")
+-- // --- GAME SEKME - AUTO COIN FARM --- //
+AddSection(GameTab, "Coin Farm")
+local coinFarmLabel = AddLabel(GameTab, "⏸️ Coin Farm pasif")
+
+local function collectAllCoins()
+    local coinContainer = workspace:FindFirstChild("__THINGS")
+    if not coinContainer then return 0 end
+    coinContainer = coinContainer:FindFirstChild("Coins")
+    if not coinContainer then return 0 end
+
+    local collected = 0
+    for _, folder1 in pairs(coinContainer:GetChildren()) do
+        if folder1:IsA("Folder") or folder1:IsA("Model") then
+            for _, folder2 in pairs(folder1:GetChildren()) do
+                if folder2:IsA("Folder") or folder2:IsA("Model") then
+                    local coin = folder2:FindFirstChild("Coin")
+                    if coin then
+                        local clickDetector = coin:FindFirstChild("ClickDetector")
+                        if clickDetector then
+                            pcall(function()
+                                clickDetector:FireClick()
+                                collected = collected + 1
+                            end)
+                        end
+                    end
+                end
+            end
+        end
+    end
+    return collected
+end
+
+local coinFarmActive = false
+local coinFarmToggle = AddToggle(GameTab, "Auto Coin Farm", "Tüm coinleri otomatik toplar", false)
+coinFarmToggle:OnChanged(function(val)
+    coinFarmActive = val
+    if val then
+        coinFarmLabel.Text = "🪙 Coin Farm aktif - Taranıyor..."
+        task.spawn(function()
+            while coinFarmActive do
+                local count = collectAllCoins()
+                coinFarmLabel.Text = "🪙 Toplandı: " .. count .. " coin"
+                task.wait(0.5)
+            end
+        end)
+    else
+        coinFarmLabel.Text = "⏸️ Coin Farm pasif"
+    end
+end)
+
+-- // --- PATH SEKME - KONUM YÜRÜME SİSTEMİ --- //
+AddSection(PathTab, "Path Walker")
+local pathLabel = AddLabel(PathTab, "📋 Kaydedilen Konum: 0")
+pathLabel.Size = UDim2.new(1, 0, 0, 20)
+
+local waypoints = {}
+local walkActive = false
+
+local function walkTo(targetPos)
+    local char = Player.Character
+    if not char or not char:FindFirstChild("HumanoidRootPart") then return end
+    local root = char.HumanoidRootPart
+    local humanoid = char:FindFirstChild("Humanoid")
+
+    local speed = 16
+    local step = 0.05
+
+    while (root.Position - targetPos).Magnitude > 1.5 do
+        if not walkActive then return end
+        local direction = (targetPos - root.Position).Unit
+        root.CFrame = CFrame.lookAt(root.Position, targetPos) + direction * speed * step
+        if humanoid then
+            humanoid:Move(direction)
+        end
+        RunService.Stepped:Wait()
+    end
+    root.CFrame = CFrame.new(targetPos)
+end
+
+AddButton(PathTab, "📍 Konum Kaydet", function()
+    if Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
+        local pos = Player.Character.HumanoidRootPart.Position
+        waypoints[#waypoints + 1] = pos
+        pathLabel.Text = "📋 Kaydedilen Konum: " .. #waypoints
+    end
+end)
+
+AddButton(PathTab, "🗑️ Tümünü Temizle", function()
+    waypoints = {}
+    pathLabel.Text = "📋 Kaydedilen Konum: 0"
+    if walkActive then
+        walkActive = false
+    end
+end)
+
+local playButton = AddButton(PathTab, "▶️ Yürümeye Başla", function()
+    if #waypoints == 0 then
+        pathLabel.Text = "⚠️ Önce konum kaydet!"
+        return
+    end
+    if walkActive then return end
+    walkActive = true
+    pathLabel.Text = "🚶 Yürüyor..."
+    task.spawn(function()
+        while walkActive do
+            for i, targetPos in ipairs(waypoints) do
+                if not walkActive then break end
+                pathLabel.Text = "🚶 Konum " .. i .. "/" .. #waypoints .. " gidiliyor..."
+                pcall(walkTo, targetPos)
+                if not walkActive then break end
+                task.wait(0.5)
+            end
+            if walkActive then
+                pathLabel.Text = "🔁 Döngü tamam, başa sarıyor..."
+                task.wait(2)
+            end
+        end
+        pathLabel.Text = "📋 Kaydedilen Konum: " .. #waypoints .. " (durduruldu)"
+    end)
+end)
+
+local stopButton = AddButton(PathTab, "⏹️ Durdur", function()
+    walkActive = false
+    pathLabel.Text = "📋 Kaydedilen Konum: " .. #waypoints .. " (durduruldu)"
+end)
 
 -- // --- SETTINGS SEKME --- //
 AddSection(SettingsTab, "Genel (Otomatik Açık)")
@@ -373,7 +493,27 @@ antiKB:OnChanged(function(val)
     end
 end)
 
--- // Anti AFK Döngüsü //
+-- // Infinite Jump //
+local infiniteJump = AddToggle(SettingsTab, "Infinite Jump", "Sınırsız zıplama", false)
+local jumpConnection = nil
+
+infiniteJump:OnChanged(function(val)
+    if val then
+        jumpConnection = UserInputService.JumpRequest:Connect(function()
+            local char = Player.Character
+            if char and char:FindFirstChild("Humanoid") then
+                char.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+            end
+        end)
+    else
+        if jumpConnection then
+            jumpConnection:Disconnect()
+            jumpConnection = nil
+        end
+    end
+end)
+
+-- // Arka plan döngüleri //
 task.spawn(function()
     while task.wait(10) do
         if antiAFK:GetState() then
@@ -382,7 +522,6 @@ task.spawn(function()
     end
 end)
 
--- // FPS Boost & Low Graphics //
 task.spawn(function()
     for _, v in pairs(workspace:GetDescendants()) do
         if v:IsA("Texture") or v:IsA("Decal") then pcall(function() v:Destroy() end) end
@@ -404,17 +543,15 @@ task.spawn(function()
     end
 end)
 
--- // Canvas Güncelle //
 for _, tab in pairs(tabs) do
     task.wait(0.05)
     tab.content.CanvasSize = UDim2.new(0, 0, 0, tab.list.AbsoluteContentSize.Y + 20)
 end
 
--- // Açılış //
 Main.Size = UDim2.new(0, 500, 0, 0)
 Main.Visible = true
-Tween(Main, {Size = UDim2.new(0, 500, 0, 360)}, 0.3)
+Tween(Main, {Size = UDim2.new(0, 500, 0, 420)}, 0.3)
 task.wait(0.3)
 Main.Visible = false
 
-print("✅ ZwacHub Pet Sim X - Fix Yüklendi")
+print("✅ ZwacHub Pet Sim X - Infinite Jump Eklendi")
