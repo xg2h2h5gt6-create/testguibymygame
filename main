@@ -1,4 +1,4 @@
--- // ZwacHub - Pet Simulator X Edition - Infinite Jump Eklendi //
+-- // ZwacHub - Pet Simulator X Edition - Cool Markers //
 
 local Players = game:GetService("Players")
 local Player = Players.LocalPlayer
@@ -68,8 +68,8 @@ MakeDraggable(ToggleBtn)
 
 -- // Ana Frame //
 local Main = Instance.new("Frame")
-Main.Size = UDim2.new(0, 500, 0, 420)
-Main.Position = UDim2.new(0.5, -250, 0.5, -210)
+Main.Size = UDim2.new(0, 500, 0, 460)
+Main.Position = UDim2.new(0.5, -250, 0.5, -230)
 Main.BackgroundColor3 = C.BG
 Main.BackgroundTransparency = 0.1
 Main.BorderSizePixel = 0
@@ -387,33 +387,94 @@ coinFarmToggle:OnChanged(function(val)
     end
 end)
 
--- // --- PATH SEKME - KONUM YÜRÜME SİSTEMİ --- //
+-- // --- PATH SEKME - COOL MARKERS --- //
 AddSection(PathTab, "Path Walker")
 local pathLabel = AddLabel(PathTab, "📋 Kaydedilen Konum: 0")
 pathLabel.Size = UDim2.new(1, 0, 0, 20)
 
 local waypoints = {}
+local markers = {}
+local markersVisible = false
 local walkActive = false
 
+-- İşaret oluşturma (koyu mor iç + kalın siyah çerçeve)
+local function createMarkers()
+    -- Eski işaretleri temizle
+    for _, marker in pairs(markers) do
+        pcall(function() marker:Destroy() end)
+    end
+    markers = {}
+
+    if not markersVisible then return end
+
+    for i, pos in ipairs(waypoints) do
+        -- İç kısım: koyu mor, şeffaf
+        local innerPart = Instance.new("Part")
+        innerPart.Name = "PathMarkerInner_" .. i
+        innerPart.Size = Vector3.new(2, 2, 2)
+        innerPart.Position = pos
+        innerPart.Anchored = true
+        innerPart.CanCollide = false
+        innerPart.Color = Color3.fromRGB(50, 15, 70) -- Koyu mor
+        innerPart.Material = Enum.Material.Neon
+        innerPart.Transparency = 0.4
+        innerPart.Parent = workspace
+        markers[#markers + 1] = innerPart
+
+        -- Dış çerçeve: Highlight ile kalın siyah çizgi
+        local highlight = Instance.new("Highlight")
+        highlight.Name = "PathMarkerHighlight_" .. i
+        highlight.FillColor = Color3.fromRGB(50, 15, 70) -- İçi de aynı mor (dolgu)
+        highlight.FillTransparency = 0.4
+        highlight.OutlineColor = Color3.fromRGB(0, 0, 0) -- Siyah çerçeve
+        highlight.OutlineTransparency = 0
+        highlight.Adornee = innerPart
+        highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+        highlight.Parent = innerPart
+        markers[#markers + 1] = highlight -- Temizlik için listeye ekle (opsiyonel, innerPart yok olunca o da gider)
+
+        -- BillboardGui: numara göstergesi (beyaz yazı)
+        local billboard = Instance.new("BillboardGui")
+        billboard.Size = UDim2.new(0, 40, 0, 40)
+        billboard.AlwaysOnTop = true
+        billboard.StudsOffset = Vector3.new(0, 2.5, 0)
+        billboard.Parent = innerPart
+
+        local textLabel = Instance.new("TextLabel")
+        textLabel.Size = UDim2.new(1, 0, 1, 0)
+        textLabel.BackgroundTransparency = 1
+        textLabel.Text = tostring(i)
+        textLabel.TextColor3 = Color3.fromRGB(255, 255, 255) -- Beyaz yazı
+        textLabel.TextSize = 24
+        textLabel.Font = Enum.Font.GothamBold
+        textLabel.Parent = billboard
+    end
+end
+
+-- Doğal yürüme fonksiyonu
 local function walkTo(targetPos)
     local char = Player.Character
-    if not char or not char:FindFirstChild("HumanoidRootPart") then return end
-    local root = char.HumanoidRootPart
+    if not char then return false end
     local humanoid = char:FindFirstChild("Humanoid")
+    if not humanoid then return false end
 
-    local speed = 16
-    local step = 0.05
+    humanoid:MoveTo(targetPos)
+    local arrived = false
+    local connection
+    connection = humanoid.MoveToFinished:Connect(function(reached)
+        if reached then arrived = true end
+    end)
 
-    while (root.Position - targetPos).Magnitude > 1.5 do
-        if not walkActive then return end
-        local direction = (targetPos - root.Position).Unit
-        root.CFrame = CFrame.lookAt(root.Position, targetPos) + direction * speed * step
-        if humanoid then
-            humanoid:Move(direction)
+    local timeout = 30
+    local startTime = tick()
+    while not arrived and walkActive and (tick() - startTime) < timeout do
+        if char:FindFirstChild("HumanoidRootPart") and (char.HumanoidRootPart.Position - targetPos).Magnitude < 2 then
+            arrived = true
         end
-        RunService.Stepped:Wait()
+        task.wait(0.1)
     end
-    root.CFrame = CFrame.new(targetPos)
+    if connection then connection:Disconnect() end
+    return arrived
 end
 
 AddButton(PathTab, "📍 Konum Kaydet", function()
@@ -421,18 +482,34 @@ AddButton(PathTab, "📍 Konum Kaydet", function()
         local pos = Player.Character.HumanoidRootPart.Position
         waypoints[#waypoints + 1] = pos
         pathLabel.Text = "📋 Kaydedilen Konum: " .. #waypoints
+        if markersVisible then createMarkers() end
     end
 end)
 
 AddButton(PathTab, "🗑️ Tümünü Temizle", function()
     waypoints = {}
     pathLabel.Text = "📋 Kaydedilen Konum: 0"
-    if walkActive then
-        walkActive = false
+    if walkActive then walkActive = false end
+    for _, marker in pairs(markers) do
+        pcall(function() marker:Destroy() end)
+    end
+    markers = {}
+end)
+
+local markerToggle = AddToggle(PathTab, "📍 Konum İşaretleri", "Koyu mor küre + siyah çerçeve", false)
+markerToggle:OnChanged(function(val)
+    markersVisible = val
+    if val then
+        createMarkers()
+    else
+        for _, marker in pairs(markers) do
+            pcall(function() marker:Destroy() end)
+        end
+        markers = {}
     end
 end)
 
-local playButton = AddButton(PathTab, "▶️ Yürümeye Başla", function()
+AddButton(PathTab, "▶️ Yürümeye Başla", function()
     if #waypoints == 0 then
         pathLabel.Text = "⚠️ Önce konum kaydet!"
         return
@@ -445,9 +522,14 @@ local playButton = AddButton(PathTab, "▶️ Yürümeye Başla", function()
             for i, targetPos in ipairs(waypoints) do
                 if not walkActive then break end
                 pathLabel.Text = "🚶 Konum " .. i .. "/" .. #waypoints .. " gidiliyor..."
-                pcall(walkTo, targetPos)
+                local success = pcall(walkTo, targetPos)
                 if not walkActive then break end
-                task.wait(0.5)
+                if not success then
+                    pathLabel.Text = "⚠️ Yürüme başarısız, sonraki konuma geçiliyor..."
+                else
+                    pathLabel.Text = "✅ Konum " .. i .. " ulaşıldı"
+                end
+                task.wait(0.3)
             end
             if walkActive then
                 pathLabel.Text = "🔁 Döngü tamam, başa sarıyor..."
@@ -458,7 +540,7 @@ local playButton = AddButton(PathTab, "▶️ Yürümeye Başla", function()
     end)
 end)
 
-local stopButton = AddButton(PathTab, "⏹️ Durdur", function()
+AddButton(PathTab, "⏹️ Durdur", function()
     walkActive = false
     pathLabel.Text = "📋 Kaydedilen Konum: " .. #waypoints .. " (durduruldu)"
 end)
@@ -493,23 +575,25 @@ antiKB:OnChanged(function(val)
     end
 end)
 
--- // Infinite Jump //
+-- Infinite Jump
 local infiniteJump = AddToggle(SettingsTab, "Infinite Jump", "Sınırsız zıplama", false)
-local jumpConnection = nil
-
+local jumpThread = nil
 infiniteJump:OnChanged(function(val)
     if val then
-        jumpConnection = UserInputService.JumpRequest:Connect(function()
-            local char = Player.Character
-            if char and char:FindFirstChild("Humanoid") then
-                char.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+        jumpThread = task.spawn(function()
+            while infiniteJump:GetState() do
+                local char = Player.Character
+                if char then
+                    local humanoid = char:FindFirstChild("Humanoid")
+                    if humanoid and humanoid.FloorMaterial ~= Enum.Material.Air then
+                        humanoid.Jump = true
+                    end
+                end
+                task.wait(0.05)
             end
         end)
     else
-        if jumpConnection then
-            jumpConnection:Disconnect()
-            jumpConnection = nil
-        end
+        if jumpThread then jumpThread = nil end
     end
 end)
 
@@ -550,8 +634,8 @@ end
 
 Main.Size = UDim2.new(0, 500, 0, 0)
 Main.Visible = true
-Tween(Main, {Size = UDim2.new(0, 500, 0, 420)}, 0.3)
+Tween(Main, {Size = UDim2.new(0, 500, 0, 460)}, 0.3)
 task.wait(0.3)
 Main.Visible = false
 
-print("✅ ZwacHub Pet Sim X - Infinite Jump Eklendi")
+print("✅ ZwacHub Pet Sim X - Cool Markers Aktif")
