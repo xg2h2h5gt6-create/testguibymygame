@@ -1,4 +1,4 @@
--- // ZwacHub - Pet Simulator X Edition - Cool Markers //
+-- // ZwacHub - Pet Simulator X Edition - 2D Markers & Quick Button //
 
 local Players = game:GetService("Players")
 local Player = Players.LocalPlayer
@@ -23,7 +23,8 @@ local C = {
     TabActive = Color3.fromRGB(220, 220, 230),
     TabInactive = Color3.fromRGB(60, 60, 65),
     SwitchOn = Color3.fromRGB(220, 220, 230),
-    SwitchOff = Color3.fromRGB(50, 50, 55)
+    SwitchOff = Color3.fromRGB(50, 50, 55),
+    MarkerColor = Color3.fromRGB(139, 69, 255) -- Mor tonları
 }
 
 local function Tween(obj, props, dur)
@@ -49,7 +50,7 @@ local function MakeDraggable(frame, handle)
     end)
 end
 
--- // Toggle Buton //
+-- // Ana Toggle Buton //
 local ToggleBtn = Instance.new("TextButton")
 ToggleBtn.Size = UDim2.new(0, 42, 0, 42)
 ToggleBtn.Position = UDim2.new(0.5, 0, 0.5, 0)
@@ -68,8 +69,8 @@ MakeDraggable(ToggleBtn)
 
 -- // Ana Frame //
 local Main = Instance.new("Frame")
-Main.Size = UDim2.new(0, 500, 0, 460)
-Main.Position = UDim2.new(0.5, -250, 0.5, -230)
+Main.Size = UDim2.new(0, 500, 0, 500)
+Main.Position = UDim2.new(0.5, -250, 0.5, -250)
 Main.BackgroundColor3 = C.BG
 Main.BackgroundTransparency = 0.1
 Main.BorderSizePixel = 0
@@ -329,6 +330,39 @@ local function AddButton(tab, title, callback)
     return btn
 end
 
+local function AddTextBox(tab, placeholder, default)
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(1, 0, 0, 40)
+    frame.BackgroundColor3 = C.Frame
+    frame.BackgroundTransparency = 0.5
+    frame.BorderSizePixel = 0
+    frame.Parent = tab.scroll
+    local fCorner = Instance.new("UICorner")
+    fCorner.CornerRadius = UDim.new(0, 8)
+    fCorner.Parent = frame
+    local textBox = Instance.new("TextBox")
+    textBox.Size = UDim2.new(1, -20, 0, 30)
+    textBox.Position = UDim2.new(0, 10, 0, 5)
+    textBox.BackgroundColor3 = C.BG
+    textBox.BackgroundTransparency = 0.3
+    textBox.BorderSizePixel = 0
+    textBox.Text = default or ""
+    textBox.PlaceholderText = placeholder or "örn: 01:00 veya 1"
+    textBox.TextColor3 = C.Text
+    textBox.PlaceholderColor3 = C.TextDim
+    textBox.TextSize = 13
+    textBox.Font = Enum.Font.Gotham
+    textBox.ClearTextOnFocus = false
+    textBox.Parent = frame
+    local tCorner = Instance.new("UICorner")
+    tCorner.CornerRadius = UDim.new(0, 6)
+    tCorner.Parent = textBox
+    return {
+        GetText = function() return textBox.Text end,
+        SetText = function(text) textBox.Text = text end
+    }
+end
+
 ToggleBtn.MouseButton1Click:Connect(function() Main.Visible = not Main.Visible end)
 Close.MouseButton1Click:Connect(function() Main.Visible = false end)
 
@@ -340,13 +374,11 @@ local SettingsTab = CreateTab("Settings", "⚙️")
 -- // --- GAME SEKME - AUTO COIN FARM --- //
 AddSection(GameTab, "Coin Farm")
 local coinFarmLabel = AddLabel(GameTab, "⏸️ Coin Farm pasif")
-
 local function collectAllCoins()
     local coinContainer = workspace:FindFirstChild("__THINGS")
     if not coinContainer then return 0 end
     coinContainer = coinContainer:FindFirstChild("Coins")
     if not coinContainer then return 0 end
-
     local collected = 0
     for _, folder1 in pairs(coinContainer:GetChildren()) do
         if folder1:IsA("Folder") or folder1:IsA("Model") then
@@ -356,10 +388,7 @@ local function collectAllCoins()
                     if coin then
                         local clickDetector = coin:FindFirstChild("ClickDetector")
                         if clickDetector then
-                            pcall(function()
-                                clickDetector:FireClick()
-                                collected = collected + 1
-                            end)
+                            pcall(function() clickDetector:FireClick(); collected = collected + 1 end)
                         end
                     end
                 end
@@ -368,7 +397,6 @@ local function collectAllCoins()
     end
     return collected
 end
-
 local coinFarmActive = false
 local coinFarmToggle = AddToggle(GameTab, "Auto Coin Farm", "Tüm coinleri otomatik toplar", false)
 coinFarmToggle:OnChanged(function(val)
@@ -387,84 +415,90 @@ coinFarmToggle:OnChanged(function(val)
     end
 end)
 
--- // --- PATH SEKME - COOL MARKERS --- //
+-- // --- PATH SEKME - 2D İŞARETLER VE HIZLI KAYIT --- //
 AddSection(PathTab, "Path Walker")
 local pathLabel = AddLabel(PathTab, "📋 Kaydedilen Konum: 0")
 pathLabel.Size = UDim2.new(1, 0, 0, 20)
+
+AddSection(PathTab, "Bekleme Süresi")
+local waitTimeInput = AddTextBox(PathTab, "örn: 01:00 veya 1 (dakika)", "0")
+local function parseWaitTime(input)
+    local text = input:gsub("%s", "")
+    if text == "" or text == "0" then return 0 end
+    local minutes, seconds = text:match("^(%d+):(%d+)$")
+    if minutes and seconds then return tonumber(minutes) * 60 + tonumber(seconds) end
+    local number = tonumber(text)
+    if number then return number * 60 end
+    return 0
+end
 
 local waypoints = {}
 local markers = {}
 local markersVisible = false
 local walkActive = false
+local quickRecordButton = nil
 
--- İşaret oluşturma (koyu mor iç + kalın siyah çerçeve)
+-- 2D İşaret oluşturma (BillboardGui tabanlı)
 local function createMarkers()
-    -- Eski işaretleri temizle
     for _, marker in pairs(markers) do
         pcall(function() marker:Destroy() end)
     end
     markers = {}
-
     if not markersVisible then return end
 
     for i, pos in ipairs(waypoints) do
-        -- İç kısım: koyu mor, şeffaf
-        local innerPart = Instance.new("Part")
-        innerPart.Name = "PathMarkerInner_" .. i
-        innerPart.Size = Vector3.new(2, 2, 2)
-        innerPart.Position = pos
-        innerPart.Anchored = true
-        innerPart.CanCollide = false
-        innerPart.Color = Color3.fromRGB(50, 15, 70) -- Koyu mor
-        innerPart.Material = Enum.Material.Neon
-        innerPart.Transparency = 0.4
-        innerPart.Parent = workspace
-        markers[#markers + 1] = innerPart
-
-        -- Dış çerçeve: Highlight ile kalın siyah çizgi
-        local highlight = Instance.new("Highlight")
-        highlight.Name = "PathMarkerHighlight_" .. i
-        highlight.FillColor = Color3.fromRGB(50, 15, 70) -- İçi de aynı mor (dolgu)
-        highlight.FillTransparency = 0.4
-        highlight.OutlineColor = Color3.fromRGB(0, 0, 0) -- Siyah çerçeve
-        highlight.OutlineTransparency = 0
-        highlight.Adornee = innerPart
-        highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-        highlight.Parent = innerPart
-        markers[#markers + 1] = highlight -- Temizlik için listeye ekle (opsiyonel, innerPart yok olunca o da gider)
-
-        -- BillboardGui: numara göstergesi (beyaz yazı)
         local billboard = Instance.new("BillboardGui")
-        billboard.Size = UDim2.new(0, 40, 0, 40)
+        billboard.Name = "PathMarker_" .. i
+        billboard.Size = UDim2.new(0, 80, 0, 80)
         billboard.AlwaysOnTop = true
-        billboard.StudsOffset = Vector3.new(0, 2.5, 0)
-        billboard.Parent = innerPart
+        billboard.StudsOffset = Vector3.new(0, 0.1, 0) -- yere yakın
+        billboard.MaxDistance = 200
+        billboard.Parent = workspace
 
-        local textLabel = Instance.new("TextLabel")
-        textLabel.Size = UDim2.new(1, 0, 1, 0)
-        textLabel.BackgroundTransparency = 1
-        textLabel.Text = tostring(i)
-        textLabel.TextColor3 = Color3.fromRGB(255, 255, 255) -- Beyaz yazı
-        textLabel.TextSize = 24
-        textLabel.Font = Enum.Font.GothamBold
-        textLabel.Parent = billboard
+        -- Yuvarlak daire
+        local circle = Instance.new("Frame")
+        circle.Size = UDim2.new(0, 60, 0, 60)
+        circle.Position = UDim2.new(0.5, -30, 0.5, -30)
+        circle.BackgroundColor3 = C.MarkerColor
+        circle.BackgroundTransparency = 0.2
+        circle.BorderSizePixel = 0
+        local uiCorner = Instance.new("UICorner")
+        uiCorner.CornerRadius = UDim.new(1, 0)
+        uiCorner.Parent = circle
+        circle.Parent = billboard
+
+        -- Numara
+        local numberLabel = Instance.new("TextLabel")
+        numberLabel.Size = UDim2.new(1, 0, 1, 0)
+        numberLabel.BackgroundTransparency = 1
+        numberLabel.Text = tostring(i)
+        numberLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+        numberLabel.TextSize = 24
+        numberLabel.Font = Enum.Font.GothamBold
+        numberLabel.Parent = circle
+
+        -- Billboard'ı konuma yerleştir
+        billboard.Adornee = workspace.Terrain or workspace:FindFirstChild("Baseplate") or workspace
+        billboard.Enabled = true
+        -- Gerçek konum için Attachment kullanacağız
+        local attachment = Instance.new("Attachment")
+        attachment.Position = pos
+        attachment.Parent = workspace.Terrain or workspace:FindFirstChild("Baseplate") or workspace
+        billboard.Adornee = attachment
+        markers[#markers + 1] = attachment
+        markers[#markers + 1] = billboard
     end
 end
 
--- Doğal yürüme fonksiyonu
+-- Doğal yürüme
 local function walkTo(targetPos)
     local char = Player.Character
     if not char then return false end
     local humanoid = char:FindFirstChild("Humanoid")
     if not humanoid then return false end
-
     humanoid:MoveTo(targetPos)
     local arrived = false
-    local connection
-    connection = humanoid.MoveToFinished:Connect(function(reached)
-        if reached then arrived = true end
-    end)
-
+    local connection = humanoid.MoveToFinished:Connect(function(reached) if reached then arrived = true end end)
     local timeout = 30
     local startTime = tick()
     while not arrived and walkActive and (tick() - startTime) < timeout do
@@ -477,6 +511,7 @@ local function walkTo(targetPos)
     return arrived
 end
 
+-- GUI'den konum kaydetme
 AddButton(PathTab, "📍 Konum Kaydet", function()
     if Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
         local pos = Player.Character.HumanoidRootPart.Position
@@ -496,12 +531,10 @@ AddButton(PathTab, "🗑️ Tümünü Temizle", function()
     markers = {}
 end)
 
-local markerToggle = AddToggle(PathTab, "📍 Konum İşaretleri", "Koyu mor küre + siyah çerçeve", false)
+local markerToggle = AddToggle(PathTab, "📍 Konum İşaretleri", "2D daire işaretleri", false)
 markerToggle:OnChanged(function(val)
     markersVisible = val
-    if val then
-        createMarkers()
-    else
+    if val then createMarkers() else
         for _, marker in pairs(markers) do
             pcall(function() marker:Destroy() end)
         end
@@ -509,11 +542,47 @@ markerToggle:OnChanged(function(val)
     end
 end)
 
-AddButton(PathTab, "▶️ Yürümeye Başla", function()
-    if #waypoints == 0 then
-        pathLabel.Text = "⚠️ Önce konum kaydet!"
-        return
+-- Hızlı Kayıt Butonu Toggle ve buton yönetimi
+local quickRecordToggle = AddToggle(PathTab, "⚡ Hızlı Kayıt Butonu", "Ekranda sürüklenebilir kayıt butonu", false)
+quickRecordToggle:OnChanged(function(val)
+    if val then
+        if not quickRecordButton then
+            quickRecordButton = Instance.new("TextButton")
+            quickRecordButton.Size = UDim2.new(0, 50, 0, 50)
+            quickRecordButton.Position = UDim2.new(0.8, 0, 0.5, 0)
+            quickRecordButton.BackgroundColor3 = Color3.fromRGB(139, 69, 255)
+            quickRecordButton.BackgroundTransparency = 0.3
+            quickRecordButton.BorderSizePixel = 0
+            quickRecordButton.Text = "📍"
+            quickRecordButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+            quickRecordButton.TextSize = 24
+            quickRecordButton.Font = Enum.Font.GothamBold
+            quickRecordButton.Parent = ScreenGui
+            local corner = Instance.new("UICorner")
+            corner.CornerRadius = UDim.new(1, 0)
+            corner.Parent = quickRecordButton
+            MakeDraggable(quickRecordButton)
+
+            -- Tıklama olayı
+            quickRecordButton.MouseButton1Click:Connect(function()
+                if Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
+                    local pos = Player.Character.HumanoidRootPart.Position
+                    waypoints[#waypoints + 1] = pos
+                    pathLabel.Text = "📋 Kaydedilen Konum: " .. #waypoints
+                    if markersVisible then createMarkers() end
+                end
+            end)
+        end
+        quickRecordButton.Visible = true
+    else
+        if quickRecordButton then
+            quickRecordButton.Visible = false
+        end
     end
+end)
+
+AddButton(PathTab, "▶️ Yürümeye Başla", function()
+    if #waypoints == 0 then pathLabel.Text = "⚠️ Önce konum kaydet!"; return end
     if walkActive then return end
     walkActive = true
     pathLabel.Text = "🚶 Yürüyor..."
@@ -527,9 +596,19 @@ AddButton(PathTab, "▶️ Yürümeye Başla", function()
                 if not success then
                     pathLabel.Text = "⚠️ Yürüme başarısız, sonraki konuma geçiliyor..."
                 else
-                    pathLabel.Text = "✅ Konum " .. i .. " ulaşıldı"
+                    local waitSeconds = parseWaitTime(waitTimeInput:GetText())
+                    if waitSeconds > 0 then
+                        local waited = 0
+                        while waited < waitSeconds and walkActive do
+                            task.wait(1)
+                            waited = waited + 1
+                            pathLabel.Text = "⏳ Konum " .. i .. " - " .. (waitSeconds - waited) .. "s kaldı..."
+                        end
+                    else
+                        pathLabel.Text = "✅ Konum " .. i .. " ulaşıldı"
+                        task.wait(0.3)
+                    end
                 end
-                task.wait(0.3)
             end
             if walkActive then
                 pathLabel.Text = "🔁 Döngü tamam, başa sarıyor..."
@@ -575,7 +654,6 @@ antiKB:OnChanged(function(val)
     end
 end)
 
--- Infinite Jump
 local infiniteJump = AddToggle(SettingsTab, "Infinite Jump", "Sınırsız zıplama", false)
 local jumpThread = nil
 infiniteJump:OnChanged(function(val)
@@ -605,21 +683,17 @@ task.spawn(function()
         end
     end
 end)
-
 task.spawn(function()
     for _, v in pairs(workspace:GetDescendants()) do
         if v:IsA("Texture") or v:IsA("Decal") then pcall(function() v:Destroy() end) end
     end
     if fpsBoost:GetState() then
-        Lighting.GlobalShadows = false
-        Lighting.FogEnd = 9e9
+        Lighting.GlobalShadows = false; Lighting.FogEnd = 9e9
         pcall(function() settings().Rendering.QualityLevel = 1 end)
     end
     if lowGraphics:GetState() then
-        Lighting.GlobalShadows = false
-        Lighting.FogEnd = 9e9
-        Lighting.Brightness = 1
-        Lighting.ClockTime = 14
+        Lighting.GlobalShadows = false; Lighting.FogEnd = 9e9
+        Lighting.Brightness = 1; Lighting.ClockTime = 14
         pcall(function()
             settings().Rendering.QualityLevel = 1
             settings().Rendering.MeshPartDetailLevel = Enum.MeshPartDetailLevel.Level03
@@ -634,8 +708,8 @@ end
 
 Main.Size = UDim2.new(0, 500, 0, 0)
 Main.Visible = true
-Tween(Main, {Size = UDim2.new(0, 500, 0, 460)}, 0.3)
+Tween(Main, {Size = UDim2.new(0, 500, 0, 500)}, 0.3)
 task.wait(0.3)
 Main.Visible = false
 
-print("✅ ZwacHub Pet Sim X - Cool Markers Aktif")
+print("✅ ZwacHub v2.1 - 2D İşaretler & Hızlı Kayıt Butonu Hazır!")
