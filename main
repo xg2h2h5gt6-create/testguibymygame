@@ -2,6 +2,8 @@ local Players = game:GetService("Players")
 local Player = Players.LocalPlayer
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
+local Lighting = game:GetService("Lighting")
+local RunService = game:GetService("RunService")
 local VirtualInputService = game:GetService("VirtualInputService")
 
 local ScreenGui = Instance.new("ScreenGui")
@@ -395,7 +397,6 @@ Close.MouseButton1Click:Connect(function() Main.Visible = false end)
 
 local PathTab = CreateTab("Path", "📍")
 local ClickerTab = CreateTab("Clicker", "👆")
-local SocialTab = CreateTab("Social", "👥")
 
 -- ==================== PATH WALKER ====================
 AddSection(PathTab, "Konum Yönetimi")
@@ -592,10 +593,12 @@ end)
 AddSection(ClickerTab, "Tıklama Noktaları")
 local clickerLabel = AddLabel(ClickerTab, "Kaydedilen Nokta: 0")
 
-local clickPoints = {}
+local clickPoints = {} -- {position = Vector2, label = BillboardGui}
 local clickerActive = false
+local clickerThread = nil
 
 local function createClickerMarkers()
+    -- Mevcut işaretleri temizle
     for _, data in ipairs(clickPoints) do
         if data.label then
             pcall(function() data.label:Destroy() end)
@@ -703,53 +706,7 @@ AddButton(ClickerTab, "Durdur", function()
     clickerStatusLabel.Text = "Durum: Durduruldu"
 end)
 
--- ==================== SOCIAL ====================
-AddSection(SocialTab, "Arkadaşlık")
-local friendLabel = AddLabel(SocialTab, "Durum: Pasif")
-local sentFriends = {}
-local friendActive = false
-local friendConnection = nil
-
-local function sendFriendRequests()
-    local success = 0
-    for _, targetPlayer in pairs(Players:GetPlayers()) do
-        if targetPlayer ~= Player and not sentFriends[targetPlayer.UserId] then
-            pcall(function()
-                Players:RequestFriendship(targetPlayer.UserId)
-                sentFriends[targetPlayer.UserId] = true
-                success = success + 1
-            end)
-            task.wait(1)
-        end
-    end
-    friendLabel.Text = "Durum: " .. success .. " istek atıldı"
-end
-
-local autoFriendToggle = AddToggle(SocialTab, "Auto Friend", "Herkese otomatik arkadaşlık isteği atar", false)
-autoFriendToggle:OnChanged(function(val)
-    friendActive = val
-    if val then
-        friendLabel.Text = "Durum: Aktif - İstekler atılıyor..."
-        task.spawn(sendFriendRequests)
-        friendConnection = Players.PlayerAdded:Connect(function(newPlayer)
-            if friendActive and newPlayer ~= Player and not sentFriends[newPlayer.UserId] then
-                task.wait(2)
-                pcall(function()
-                    Players:RequestFriendship(newPlayer.UserId)
-                    sentFriends[newPlayer.UserId] = true
-                end)
-                friendLabel.Text = "Durum: Yeni oyuncuya istek atıldı: " .. newPlayer.Name
-            end
-        end)
-    else
-        if friendConnection then
-            friendConnection:Disconnect()
-            friendConnection = nil
-        end
-        friendLabel.Text = "Durum: Durduruldu"
-    end
-end)
-
+-- Canvas güncelleme
 for _, tab in pairs(tabs) do
     task.wait(0.05)
     tab.content.CanvasSize = UDim2.new(0, 0, 0, tab.list.AbsoluteContentSize.Y + 40)
@@ -761,4 +718,4 @@ Tween(Main, {Size = UDim2.new(0, 500, 0, 460)}, 0.3)
 task.wait(0.3)
 Main.Visible = false
 
-print("ZwacHub Pet Sim X - Path & Clicker & Social Hazır")
+print("ZwacHub Pet Sim X - Path & Clicker Hazır")
